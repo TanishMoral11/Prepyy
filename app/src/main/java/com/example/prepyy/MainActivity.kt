@@ -7,6 +7,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
@@ -116,11 +117,11 @@ class MainActivity : AppCompatActivity() {
             try {
                 val content = when (input) {
                     is String -> content {
-                        text("Explain the following content:\n\n$input")
+                        text("Explain the following content in short and very easy way like 14 year old kid:\n\n$input")
                     }
                     is Bitmap -> content {
                         image(input)
-                        text("Explain the content of this image")
+                        text("Explain the content of this image in short and very easy way like 14 year old kid:")
                     }
                     else -> throw IllegalArgumentException("Unsupported input type")
                 }
@@ -143,11 +144,23 @@ class MainActivity : AppCompatActivity() {
 
                 val response = geminiModel.generateContent(content)
                 val quizJson = response.text
-                val intent = Intent(this@MainActivity, QuizActivity::class.java)
+
+                // Log the generated JSON for debugging
+                Log.d("QuizDebug", "Generated JSON: $quizJson")
+
+                val intent = Intent(this@MainActivity, activity_quiz::class.java)
                 intent.putExtra("QUIZ_JSON", quizJson)
-                startActivity(intent)
+
+                // Check if the intent can be resolved
+                if (intent.resolveActivity(packageManager) != null) {
+                    startActivity(intent)
+                } else {
+                    Toast.makeText(this@MainActivity, "QuizActivity not found", Toast.LENGTH_LONG).show()
+                    Log.e("QuizDebug", "QuizActivity not found in manifest")
+                }
             } catch (e: Exception) {
                 Toast.makeText(this@MainActivity, "Error generating quiz: ${e.message}", Toast.LENGTH_LONG).show()
+                Log.e("QuizDebug", "Error generating quiz", e)
             }
         }
     }

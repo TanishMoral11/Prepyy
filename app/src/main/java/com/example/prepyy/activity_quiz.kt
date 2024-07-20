@@ -3,6 +3,7 @@ import android.widget.Button
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.prepyy.R
 import org.json.JSONArray
@@ -25,6 +26,11 @@ class QuizActivity : AppCompatActivity() {
         submitButton = findViewById(R.id.submitButton)
 
         val quizJson = intent.getStringExtra("QUIZ_JSON")
+        if (quizJson.isNullOrEmpty()) {
+            Toast.makeText(this, "Quiz data is missing", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
         quizQuestions = JSONArray(quizJson)
 
         displayQuestion()

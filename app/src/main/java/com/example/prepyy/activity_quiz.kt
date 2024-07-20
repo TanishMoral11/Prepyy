@@ -1,11 +1,13 @@
+package com.example.prepyy
+
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.example.prepyy.R
 import org.json.JSONArray
 
 class QuizActivity : AppCompatActivity() {
@@ -71,7 +73,7 @@ class QuizActivity : AppCompatActivity() {
 
     private fun showResult() {
         questionTextView.text = "Quiz completed! Your score: $score out of ${quizQuestions.length()}"
-        optionsRadioGroup.visibility = android.view.View.GONE
-        submitButton.visibility = android.view.View.GONE
+        optionsRadioGroup.visibility = View.GONE
+        submitButton.visibility = View.GONE
     }
 }

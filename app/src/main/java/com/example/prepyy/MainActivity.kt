@@ -1,6 +1,6 @@
 package com.example.prepyy
 
-import QuizActivity
+
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
@@ -165,3 +165,4 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
+

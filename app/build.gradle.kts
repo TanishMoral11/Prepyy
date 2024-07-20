@@ -50,4 +50,5 @@ dependencies {
     implementation ("com.google.ai.client.generativeai:generativeai:0.1.1")
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
     implementation ("com.itextpdf:itext7-core:7.1.16")
+    implementation ("androidx.constraintlayout:constraintlayout:2.1.4")
 }

@@ -1,11 +1,17 @@
 package com.example.prepyy
 
+import QuizActivity
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.view.View
+import android.widget.Button
+import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -18,17 +24,16 @@ import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import android.widget.Button
-import android.widget.TextView
-import androidx.activity.enableEdgeToEdge
 import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var uploadButton: Button
     private lateinit var explanationTextView: TextView
+    private lateinit var takeQuizButton: Button
     private val apiKey = "AIzaSyAaiqzhC6z-HfLrw0LU7108pbp8OVb_Hw4"
     private val geminiModel = GenerativeModel(modelName = "gemini-1.5-pro", apiKey = apiKey)
+    private var pdfContent: String = ""
 
     private val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
@@ -44,10 +49,17 @@ class MainActivity : AppCompatActivity() {
 
         uploadButton = findViewById(R.id.uploadButton)
         explanationTextView = findViewById(R.id.explanationTextView)
+        takeQuizButton = findViewById(R.id.takeQuizButton)
 
         uploadButton.setOnClickListener {
             openFilePicker()
         }
+
+        takeQuizButton.setOnClickListener {
+            generateQuizAndNavigate()
+        }
+
+        takeQuizButton.visibility = View.GONE
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -79,9 +91,9 @@ class MainActivity : AppCompatActivity() {
                 val pdfReader = PdfReader(inputStream)
                 val pdfDocument = PdfDocument(pdfReader)
                 val pageNum = pdfDocument.numberOfPages.coerceAtMost(1) // Get text from first page only
-                val text = PdfTextExtractor.getTextFromPage(pdfDocument.getPage(pageNum))
+                pdfContent = PdfTextExtractor.getTextFromPage(pdfDocument.getPage(pageNum))
                 pdfDocument.close()
-                analyzeWithGemini(text)
+                analyzeWithGemini(pdfContent)
             }
         } catch (e: IOException) {
             explanationTextView.text = "Error extracting text from PDF: ${e.message}"
@@ -115,8 +127,27 @@ class MainActivity : AppCompatActivity() {
 
                 val response = geminiModel.generateContent(content)
                 explanationTextView.text = response.text
+                takeQuizButton.visibility = View.VISIBLE
             } catch (e: Exception) {
                 explanationTextView.text = "Error analyzing content: ${e.message}"
+            }
+        }
+    }
+
+    private fun generateQuizAndNavigate() {
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                val content = content {
+                    text("Based on the following content, generate 10 multiple-choice questions with 4 options each. Format the output as a JSON array of objects, where each object has 'question', 'options' (an array of 4 strings), and 'correctAnswer' (index of the correct option) fields:\n\n$pdfContent")
+                }
+
+                val response = geminiModel.generateContent(content)
+                val quizJson = response.text
+                val intent = Intent(this@MainActivity, QuizActivity::class.java)
+                intent.putExtra("QUIZ_JSON", quizJson)
+                startActivity(intent)
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "Error generating quiz: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }

@@ -1,6 +1,5 @@
 package com.example.prepyy
 
-
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
@@ -11,8 +10,6 @@ import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
-import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -45,7 +42,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
         uploadButton = findViewById(R.id.uploadButton)
@@ -127,7 +123,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 val response = geminiModel.generateContent(content)
-                explanationTextView.text = response.text
+                explanationTextView.text = response.text?.toString() ?: "No explanation available"
                 takeQuizButton.visibility = View.VISIBLE
             } catch (e: Exception) {
                 explanationTextView.text = "Error analyzing content: ${e.message}"
@@ -145,24 +141,49 @@ class MainActivity : AppCompatActivity() {
                 val response = geminiModel.generateContent(content)
                 val quizJson = response.text
 
-                // Log the generated JSON for debugging
+                // Log the generated JSON
                 Log.d("QuizDebug", "Generated JSON: $quizJson")
 
-                val intent = Intent(this@MainActivity, activity_quiz::class.java)
-                intent.putExtra("QUIZ_JSON", quizJson)
-
-                // Check if the intent can be resolved
-                if (intent.resolveActivity(packageManager) != null) {
-                    startActivity(intent)
-                } else {
-                    Toast.makeText(this@MainActivity, "QuizActivity not found", Toast.LENGTH_LONG).show()
-                    Log.e("QuizDebug", "QuizActivity not found in manifest")
+                if (quizJson != null) {
+                    if (quizJson.trim().startsWith("[") && quizJson.trim().endsWith("]")) {
+                        navigateToQuiz(quizJson)
+                    } else {
+                        Log.e("QuizDebug", "Invalid JSON response from API")
+                        val fallbackQuizJson = generateFallbackQuiz()
+                        navigateToQuiz(fallbackQuizJson)
+                    }
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, "Error generating quiz: ${e.message}", Toast.LENGTH_LONG).show()
                 Log.e("QuizDebug", "Error generating quiz", e)
+                val fallbackQuizJson = generateFallbackQuiz()
+                navigateToQuiz(fallbackQuizJson)
             }
         }
     }
-}
 
+    private fun navigateToQuiz(quizJson: String) {
+        val intent = Intent(this@MainActivity, QuizActivity::class.java).apply {
+            putExtra("QUIZ_JSON", quizJson)
+            putExtra("EXPLANATION", explanationTextView.text.toString())
+        }
+        startActivity(intent)
+    }
+
+    private fun generateFallbackQuiz(): String {
+        return """
+            [
+                {
+                    "question": "What is the capital of France?",
+                    "options": ["London", "Berlin", "Paris", "Madrid"],
+                    "correctAnswer": 2
+                },
+                {
+                    "question": "Who wrote 'Romeo and Juliet'?",
+                    "options": ["Charles Dickens", "William Shakespeare", "Jane Austen", "Mark Twain"],
+                    "correctAnswer": 1
+                }
+                // Add more questions...
+            ]
+        """.trimIndent()
+    }
+}

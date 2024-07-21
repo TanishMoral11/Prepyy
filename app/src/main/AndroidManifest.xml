@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
@@ -15,16 +16,19 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Prepyy"
         tools:targetApi="31">
-        <activity
-            android:name=".activity_quiz"
-            android:exported="true" />
 
+        <!-- QuizActivity -->
+        <activity
+            android:name="com.example.prepyy.QuizActivity"
+            android:exported="false"
+            tools:ignore="MissingClass" />
+
+        <!-- MainActivity -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>

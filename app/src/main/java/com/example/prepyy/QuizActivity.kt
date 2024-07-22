@@ -6,6 +6,7 @@ import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONArray
 import org.json.JSONException
@@ -17,8 +18,8 @@ class QuizActivity : AppCompatActivity() {
 
     private lateinit var questions: List<Question>
     private var currentQuestionIndex = 0
+    private var score = 0
 
-    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_quiz)
@@ -36,6 +37,12 @@ class QuizActivity : AppCompatActivity() {
         Log.d("QuizDebug", "Received quiz JSON in QuizActivity: $quizJson")
 
         questions = parseQuestions(quizJson)
+        if (questions.isEmpty()) {
+            // Handle error - no questions parsed
+            finish()
+            return
+        }
+
         displayQuestion(currentQuestionIndex)
 
         nextButton.setOnClickListener {
@@ -43,8 +50,7 @@ class QuizActivity : AppCompatActivity() {
             if (currentQuestionIndex < questions.size) {
                 displayQuestion(currentQuestionIndex)
             } else {
-                // Quiz finished, handle end of quiz
-                finish() // For now, just close the activity
+                showResult()
             }
         }
 
@@ -84,9 +90,10 @@ class QuizActivity : AppCompatActivity() {
             questionTextView.text = question.text
             question.options.forEachIndexed { i, option ->
                 optionButtons[i].text = option
+                optionButtons[i].isEnabled = true
+                optionButtons[i].setBackgroundResource(android.R.color.background_light)
             }
-            // Reset button colors
-            optionButtons.forEach { it.setBackgroundResource(android.R.color.background_light) }
+            nextButton.visibility = View.GONE
         }
     }
 
@@ -94,13 +101,20 @@ class QuizActivity : AppCompatActivity() {
         val currentQuestion = questions[currentQuestionIndex]
         if (selectedIndex == currentQuestion.correctAnswer) {
             optionButtons[selectedIndex].setBackgroundResource(android.R.color.holo_green_light)
+            score++
         } else {
             optionButtons[selectedIndex].setBackgroundResource(android.R.color.holo_red_light)
             optionButtons[currentQuestion.correctAnswer].setBackgroundResource(android.R.color.holo_green_light)
         }
-        // Disable all buttons after an answer is selected
         optionButtons.forEach { it.isEnabled = false }
         nextButton.visibility = View.VISIBLE
+    }
+
+    private fun showResult() {
+        val resultMessage = "You scored $score out of ${questions.size}"
+        // You can show this in a dialog or a new activity
+        Toast.makeText(this, resultMessage, Toast.LENGTH_LONG).show()
+        finish()
     }
 
     data class Question(val text: String, val options: List<String>, val correctAnswer: Int)

@@ -10,6 +10,7 @@ import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -34,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     private val apiKey = "AIzaSyAaiqzhC6z-HfLrw0LU7108pbp8OVb_Hw4"
     private val geminiModel = GenerativeModel(modelName = "gemini-1.5-pro", apiKey = apiKey)
     private var pdfContent: String = ""
+    private var isGeneratingQuiz = false
 
     private val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
@@ -55,7 +57,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         takeQuizButton.setOnClickListener {
-            generateQuizAndNavigate()
+            if (isGeneratingQuiz) {
+                Toast.makeText(this, "Please wait, quiz is generating...", Toast.LENGTH_SHORT).show()
+            } else {
+                generateQuizAndNavigate()
+            }
         }
 
         takeQuizButton.visibility = View.GONE
@@ -137,30 +143,29 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun generateQuizAndNavigate() {
+        if (isGeneratingQuiz) {
+            Toast.makeText(this, "Please wait, quiz is generating...", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        isGeneratingQuiz = true
+        takeQuizButton.isEnabled = false // Optionally disable the button while generating
+
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 Log.d("QuizDebug", "Starting quiz generation")
                 val content = content {
-                    text("Based on the following content, generate 10 multiple-choice questions with 4 options each. Format each question as follows:\nQ: [Question]\nA) [Option A]\nB) [Option B]\nC) [Option C]\nD) [Option D]\nCorrect Answer: [A/B/C/D]\n\nContent:\n$pdfContent")
+                    text("Based on the following content, generate 5 multiple-choice questions with 4 options each. Format the response as a JSON array with each question object containing 'question', 'options' (as an array), and 'correctAnswer' (as an index 0-3). Content:\n\n$pdfContent")
                 }
 
                 Log.d("QuizDebug", "Sending request to Gemini")
                 val response = geminiModel.generateContent(content)
-                val quizText = response.text
+                val quizJson = response.text?.toString() ?: ""
 
-                Log.d("QuizDebug", "Received response from Gemini: $quizText")
+                Log.d("QuizDebug", "Received response from Gemini: $quizJson")
 
-                if (quizText != null && quizText.isNotBlank()) {
-                    Log.d("QuizDebug", "Response is not null or blank")
-                    val quizJson = parseQuizText(quizText)
-                    if (quizJson.isNotEmpty()) {
-                        Log.d("QuizDebug", "Parsed quiz JSON: $quizJson")
-                        navigateToQuiz(quizJson)
-                    } else {
-                        Log.e("QuizDebug", "Failed to parse quiz text")
-                        val fallbackQuizJson = generateFallbackQuiz()
-                        navigateToQuiz(fallbackQuizJson)
-                    }
+                if (quizJson.isNotBlank()) {
+                    navigateToQuiz(quizJson)
                 } else {
                     Log.e("QuizDebug", "Empty response from API")
                     val fallbackQuizJson = generateFallbackQuiz()
@@ -170,6 +175,9 @@ class MainActivity : AppCompatActivity() {
                 Log.e("QuizDebug", "Error generating quiz", e)
                 val fallbackQuizJson = generateFallbackQuiz()
                 navigateToQuiz(fallbackQuizJson)
+            } finally {
+                isGeneratingQuiz = false
+                takeQuizButton.isEnabled = true // Re-enable the button
             }
         }
     }

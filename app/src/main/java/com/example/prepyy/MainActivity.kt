@@ -22,6 +22,8 @@ import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONException
 import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
@@ -90,6 +92,9 @@ class MainActivity : AppCompatActivity() {
                 val pageNum = pdfDocument.numberOfPages.coerceAtMost(1) // Get text from first page only
                 pdfContent = PdfTextExtractor.getTextFromPage(pdfDocument.getPage(pageNum))
                 pdfDocument.close()
+
+                Log.d("QuizDebug", "PDF Content: $pdfContent")
+
                 analyzeWithGemini(pdfContent)
             }
         } catch (e: IOException) {
@@ -134,30 +139,64 @@ class MainActivity : AppCompatActivity() {
     private fun generateQuizAndNavigate() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
+                Log.d("QuizDebug", "Starting quiz generation")
                 val content = content {
                     text("Based on the following content, generate 10 multiple-choice questions with 4 options each. Format the output as a JSON array of objects, where each object has 'question', 'options' (an array of 4 strings), and 'correctAnswer' (index of the correct option) fields:\n\n$pdfContent")
                 }
 
+                Log.d("QuizDebug", "Sending request to Gemini")
                 val response = geminiModel.generateContent(content)
                 val quizJson = response.text
 
-                // Log the generated JSON
-                Log.d("QuizDebug", "Generated JSON: $quizJson")
+                Log.d("QuizDebug", "Received response from Gemini: $quizJson")
 
-                if (quizJson != null) {
-                    if (quizJson.trim().startsWith("[") && quizJson.trim().endsWith("]")) {
+                if (quizJson != null && quizJson.isNotBlank()) {
+                    Log.d("QuizDebug", "Response is not null or blank")
+                    if (isValidQuizJson(quizJson)) {
+                        Log.d("QuizDebug", "JSON is valid, navigating to quiz")
                         navigateToQuiz(quizJson)
                     } else {
                         Log.e("QuizDebug", "Invalid JSON response from API")
                         val fallbackQuizJson = generateFallbackQuiz()
                         navigateToQuiz(fallbackQuizJson)
                     }
+                } else {
+                    Log.e("QuizDebug", "Empty response from API")
+                    val fallbackQuizJson = generateFallbackQuiz()
+                    navigateToQuiz(fallbackQuizJson)
                 }
             } catch (e: Exception) {
                 Log.e("QuizDebug", "Error generating quiz", e)
                 val fallbackQuizJson = generateFallbackQuiz()
                 navigateToQuiz(fallbackQuizJson)
             }
+        }
+    }
+
+    private fun isValidQuizJson(json: String): Boolean {
+        return try {
+            val jsonArray = JSONArray(json)
+            Log.d("QuizDebug", "JSON Array length: ${jsonArray.length()}")
+            if (jsonArray.length() == 0) {
+                Log.e("QuizDebug", "JSON Array is empty")
+                return false
+            }
+            for (i in 0 until jsonArray.length()) {
+                val questionObj = jsonArray.getJSONObject(i)
+                if (!questionObj.has("question") || !questionObj.has("options") || !questionObj.has("correctAnswer")) {
+                    Log.e("QuizDebug", "Missing required fields in question object")
+                    return false
+                }
+                val options = questionObj.getJSONArray("options")
+                if (options.length() != 4) {
+                    Log.e("QuizDebug", "Options array does not have exactly 4 items")
+                    return false
+                }
+            }
+            true
+        } catch (e: JSONException) {
+            Log.e("QuizDebug", "JSON parsing error", e)
+            false
         }
     }
 

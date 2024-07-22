@@ -38,6 +38,7 @@ class QuizActivity : AppCompatActivity() {
         questions = parseQuestions(quizJson)
         if (questions.isEmpty()) {
             // Handle error - no questions parsed
+            Toast.makeText(this, "Error parsing questions", Toast.LENGTH_SHORT).show()
             finish()
             return
         }

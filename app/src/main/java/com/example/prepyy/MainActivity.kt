@@ -199,6 +199,7 @@ class MainActivity : AppCompatActivity() {
             }
             true
         } catch (e: JSONException) {
+            Log.e("QuizDebug", "Invalid JSON format", e)
             false
         }
     }
@@ -210,5 +211,6 @@ class MainActivity : AppCompatActivity() {
         }
         startActivity(intent)
     }
+
 
 }

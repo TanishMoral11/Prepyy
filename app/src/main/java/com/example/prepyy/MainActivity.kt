@@ -167,7 +167,8 @@ class MainActivity : AppCompatActivity() {
 
                 Log.d("QuizDebug", "Received response from Gemini: $quizJson")
 
-                if (quizJson.isNotBlank() && quizJson.startsWith("[")) {
+                // Validate the JSON format
+                if (isValidQuizJson(quizJson)) {
                     navigateToQuiz(quizJson)
                 } else {
                     Log.e("QuizDebug", "Invalid response from API")
@@ -183,6 +184,24 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun isValidQuizJson(json: String): Boolean {
+        return try {
+            val jsonArray = JSONArray(json)
+            for (i in 0 until jsonArray.length()) {
+                val jsonObject = jsonArray.getJSONObject(i)
+                jsonObject.getString("question")
+                val optionsArray = jsonObject.getJSONArray("options")
+                for (j in 0 until optionsArray.length()) {
+                    optionsArray.getString(j)
+                }
+                jsonObject.getInt("correctAnswer")
+            }
+            true
+        } catch (e: JSONException) {
+            false
+        }
+    }
+
     private fun navigateToQuiz(quizJson: String) {
         val intent = Intent(this@MainActivity, QuizActivity::class.java).apply {
             putExtra("QUIZ_JSON", quizJson)
@@ -190,4 +209,5 @@ class MainActivity : AppCompatActivity() {
         }
         startActivity(intent)
     }
+
 }

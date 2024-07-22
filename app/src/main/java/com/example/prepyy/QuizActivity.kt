@@ -1,135 +1,107 @@
 package com.example.prepyy
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.widget.*
+import android.widget.Button
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.google.gson.Gson
-import com.google.gson.JsonSyntaxException
-
-data class Question(
-    val question: String,
-    val options: List<String>,
-    val correctAnswer: Int
-)
+import org.json.JSONArray
+import org.json.JSONException
 
 class QuizActivity : AppCompatActivity() {
-
     private lateinit var questionTextView: TextView
-    private lateinit var optionsRadioGroup: RadioGroup
-    private lateinit var submitButton: Button
-    private lateinit var progressTextView: TextView
-    private lateinit var explanationTextView: TextView
+    private lateinit var optionButtons: List<Button>
+    private lateinit var nextButton: Button
 
-    private lateinit var quizQuestions: List<Question>
+    private lateinit var questions: List<Question>
     private var currentQuestionIndex = 0
-    private var score = 0
 
+    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_quiz)
 
         questionTextView = findViewById(R.id.questionTextView)
-        optionsRadioGroup = findViewById(R.id.optionsRadioGroup)
-        submitButton = findViewById(R.id.submitButton)
-        progressTextView = findViewById(R.id.progressTextView)
-        explanationTextView = findViewById(R.id.explanationTextView)
+        optionButtons = listOf(
+            findViewById(R.id.optionAButton),
+            findViewById(R.id.optionBButton),
+            findViewById(R.id.optionCButton),
+            findViewById(R.id.optionDButton)
+        )
+        nextButton = findViewById(R.id.nextButton)
 
         val quizJson = intent.getStringExtra("QUIZ_JSON")
-        val explanation = intent.getStringExtra("EXPLANATION")
+        Log.d("QuizDebug", "Received quiz JSON in QuizActivity: $quizJson")
 
-        if (quizJson.isNullOrEmpty() || explanation.isNullOrEmpty()) {
-            showError("Quiz data or explanation is missing")
-            return
-        }
+        questions = parseQuestions(quizJson)
+        displayQuestion(currentQuestionIndex)
 
-        explanationTextView.text = explanation
-
-        try {
-            // Log the received JSON
-            Log.d("QuizDebug", "Received JSON: $quizJson")
-
-            // Parse JSON using Gson
-            val gson = Gson()
-            quizQuestions = gson.fromJson(quizJson, Array<Question>::class.java).toList()
-            if (quizQuestions.isEmpty()) {
-                showError("No questions found in the quiz data")
-                return
-            }
-            displayQuestion()
-        } catch (e: JsonSyntaxException) {
-            showError("Error parsing quiz data: ${e.message}")
-            Log.e("QuizDebug", "JSON parsing error", e)
-            // Use fallback questions
-            quizQuestions = generateFallbackQuestions()
-            displayQuestion()
-        }
-
-        submitButton.setOnClickListener {
-            if (optionsRadioGroup.checkedRadioButtonId == -1) {
-                Toast.makeText(this, "Please select an answer", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            checkAnswer()
+        nextButton.setOnClickListener {
             currentQuestionIndex++
-            if (currentQuestionIndex < quizQuestions.size) {
-                displayQuestion()
+            if (currentQuestionIndex < questions.size) {
+                displayQuestion(currentQuestionIndex)
             } else {
-                showResult()
+                // Quiz finished, handle end of quiz
+                finish() // For now, just close the activity
+            }
+        }
+
+        optionButtons.forEachIndexed { index, button ->
+            button.setOnClickListener {
+                checkAnswer(index)
             }
         }
     }
 
-    private fun showError(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
-        finish()
-    }
-
-    private fun displayQuestion() {
-        val questionObj = quizQuestions[currentQuestionIndex]
-        questionTextView.text = questionObj.question
-        optionsRadioGroup.removeAllViews()
-        questionObj.options.forEachIndexed { index, option ->
-            val radioButton = RadioButton(this)
-            radioButton.text = option
-            radioButton.id = index
-            optionsRadioGroup.addView(radioButton)
+    private fun parseQuestions(quizJson: String?): List<Question> {
+        val questions = mutableListOf<Question>()
+        quizJson?.let {
+            try {
+                val jsonArray = JSONArray(it)
+                for (i in 0 until jsonArray.length()) {
+                    val questionObj = jsonArray.getJSONObject(i)
+                    val question = Question(
+                        questionObj.getString("question"),
+                        questionObj.getJSONArray("options").let { options ->
+                            List(options.length()) { j -> options.getString(j) }
+                        },
+                        questionObj.getInt("correctAnswer")
+                    )
+                    questions.add(question)
+                }
+            } catch (e: JSONException) {
+                Log.e("QuizDebug", "Error parsing quiz JSON", e)
+            }
         }
-        progressTextView.text = "Question ${currentQuestionIndex + 1} of ${quizQuestions.size}"
-        optionsRadioGroup.clearCheck()
+        return questions
     }
 
-    private fun checkAnswer() {
-        val questionObj = quizQuestions[currentQuestionIndex]
-        val correctAnswerIndex = questionObj.correctAnswer
-        val selectedAnswerIndex = optionsRadioGroup.indexOfChild(findViewById(optionsRadioGroup.checkedRadioButtonId))
-
-        if (selectedAnswerIndex == correctAnswerIndex) {
-            score++
+    private fun displayQuestion(index: Int) {
+        if (index < questions.size) {
+            val question = questions[index]
+            questionTextView.text = question.text
+            question.options.forEachIndexed { i, option ->
+                optionButtons[i].text = option
+            }
+            // Reset button colors
+            optionButtons.forEach { it.setBackgroundResource(android.R.color.background_light) }
         }
     }
 
-    private fun showResult() {
-        questionTextView.text = "Quiz completed!"
-        optionsRadioGroup.visibility = View.GONE
-        submitButton.visibility = View.GONE
-        progressTextView.visibility = View.GONE
-
-        val resultTextView = TextView(this)
-        resultTextView.text = "Your score: $score out of ${quizQuestions.size}"
-        resultTextView.textSize = 18f
-        resultTextView.setPadding(0, 16, 0, 16)
-
-        val layout = findViewById<LinearLayout>(R.id.quizLayout)
-        layout.addView(resultTextView)
+    private fun checkAnswer(selectedIndex: Int) {
+        val currentQuestion = questions[currentQuestionIndex]
+        if (selectedIndex == currentQuestion.correctAnswer) {
+            optionButtons[selectedIndex].setBackgroundResource(android.R.color.holo_green_light)
+        } else {
+            optionButtons[selectedIndex].setBackgroundResource(android.R.color.holo_red_light)
+            optionButtons[currentQuestion.correctAnswer].setBackgroundResource(android.R.color.holo_green_light)
+        }
+        // Disable all buttons after an answer is selected
+        optionButtons.forEach { it.isEnabled = false }
+        nextButton.visibility = View.VISIBLE
     }
 
-    private fun generateFallbackQuestions(): List<Question> {
-        return listOf(
-            Question("What is the capital of France?", listOf("London", "Berlin", "Paris", "Madrid"), 2),
-            Question("Who wrote 'Romeo and Juliet'?", listOf("Charles Dickens", "William Shakespeare", "Jane Austen", "Mark Twain"), 1)
-            // Add more fallback questions here
-        )
-    }
+    data class Question(val text: String, val options: List<String>, val correctAnswer: Int)
 }

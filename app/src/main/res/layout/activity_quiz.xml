@@ -1,24 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/quizLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp">
-
-    <TextView
-        android:id="@+id/explanationTextView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="14sp"
-        android:layout_marginBottom="16dp"/>
-
-    <TextView
-        android:id="@+id/progressTextView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="14sp"
-        android:layout_marginBottom="8dp"/>
 
     <TextView
         android:id="@+id/questionTextView"
@@ -28,16 +13,35 @@
         android:textStyle="bold"
         android:layout_marginBottom="16dp"/>
 
-    <RadioGroup
-        android:id="@+id/optionsRadioGroup"
+    <Button
+        android:id="@+id/optionAButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"/>
+
+    <Button
+        android:id="@+id/optionBButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"/>
+
+    <Button
+        android:id="@+id/optionCButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"/>
+
+    <Button
+        android:id="@+id/optionDButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"/>
 
     <Button
-        android:id="@+id/submitButton"
-        android:layout_width="wrap_content"
+        android:id="@+id/nextButton"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Submit"/>
+        android:text="Next"
+        android:visibility="gone"/>
 
 </LinearLayout>

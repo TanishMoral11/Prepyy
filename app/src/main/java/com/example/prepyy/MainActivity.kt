@@ -23,7 +23,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.json.JSONArray
-import org.json.JSONException
+import org.json.JSONObject
 import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
@@ -141,22 +141,23 @@ class MainActivity : AppCompatActivity() {
             try {
                 Log.d("QuizDebug", "Starting quiz generation")
                 val content = content {
-                    text("Based on the following content, generate 10 multiple-choice questions with 4 options each. Format the output as a JSON array of objects, where each object has 'question', 'options' (an array of 4 strings), and 'correctAnswer' (index of the correct option) fields:\n\n$pdfContent")
+                    text("Based on the following content, generate 10 multiple-choice questions with 4 options each. Format each question as follows:\nQ: [Question]\nA) [Option A]\nB) [Option B]\nC) [Option C]\nD) [Option D]\nCorrect Answer: [A/B/C/D]\n\nContent:\n$pdfContent")
                 }
 
                 Log.d("QuizDebug", "Sending request to Gemini")
                 val response = geminiModel.generateContent(content)
-                val quizJson = response.text
+                val quizText = response.text
 
-                Log.d("QuizDebug", "Received response from Gemini: $quizJson")
+                Log.d("QuizDebug", "Received response from Gemini: $quizText")
 
-                if (quizJson != null && quizJson.isNotBlank()) {
+                if (quizText != null && quizText.isNotBlank()) {
                     Log.d("QuizDebug", "Response is not null or blank")
-                    if (isValidQuizJson(quizJson)) {
-                        Log.d("QuizDebug", "JSON is valid, navigating to quiz")
+                    val quizJson = parseQuizText(quizText)
+                    if (quizJson.isNotEmpty()) {
+                        Log.d("QuizDebug", "Parsed quiz JSON: $quizJson")
                         navigateToQuiz(quizJson)
                     } else {
-                        Log.e("QuizDebug", "Invalid JSON response from API")
+                        Log.e("QuizDebug", "Failed to parse quiz text")
                         val fallbackQuizJson = generateFallbackQuiz()
                         navigateToQuiz(fallbackQuizJson)
                     }
@@ -173,31 +174,40 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun isValidQuizJson(json: String): Boolean {
-        return try {
-            val jsonArray = JSONArray(json)
-            Log.d("QuizDebug", "JSON Array length: ${jsonArray.length()}")
-            if (jsonArray.length() == 0) {
-                Log.e("QuizDebug", "JSON Array is empty")
-                return false
-            }
-            for (i in 0 until jsonArray.length()) {
-                val questionObj = jsonArray.getJSONObject(i)
-                if (!questionObj.has("question") || !questionObj.has("options") || !questionObj.has("correctAnswer")) {
-                    Log.e("QuizDebug", "Missing required fields in question object")
-                    return false
+    private fun parseQuizText(quizText: String): String {
+        val questions = quizText.split("\n\n")
+        val jsonArray = JSONArray()
+
+        for (questionText in questions) {
+            try {
+                val lines = questionText.split("\n")
+                if (lines.size >= 6) {
+                    val question = lines[0].removePrefix("Q: ")
+                    val options = lines.subList(1, 5).map { it.substring(3) }
+                    val correctAnswer = lines[5].removePrefix("Correct Answer: ").trim()
+                    val correctIndex = when (correctAnswer) {
+                        "A" -> 0
+                        "B" -> 1
+                        "C" -> 2
+                        "D" -> 3
+                        else -> -1
+                    }
+
+                    if (correctIndex != -1) {
+                        val questionObj = JSONObject().apply {
+                            put("question", question)
+                            put("options", JSONArray(options))
+                            put("correctAnswer", correctIndex)
+                        }
+                        jsonArray.put(questionObj)
+                    }
                 }
-                val options = questionObj.getJSONArray("options")
-                if (options.length() != 4) {
-                    Log.e("QuizDebug", "Options array does not have exactly 4 items")
-                    return false
-                }
+            } catch (e: Exception) {
+                Log.e("QuizDebug", "Error parsing question: $questionText", e)
             }
-            true
-        } catch (e: JSONException) {
-            Log.e("QuizDebug", "JSON parsing error", e)
-            false
         }
+
+        return jsonArray.toString()
     }
 
     private fun navigateToQuiz(quizJson: String) {
@@ -221,7 +231,6 @@ class MainActivity : AppCompatActivity() {
                     "options": ["Charles Dickens", "William Shakespeare", "Jane Austen", "Mark Twain"],
                     "correctAnswer": 1
                 }
-                // Add more questions...
             ]
         """.trimIndent()
     }

@@ -1,6 +1,5 @@
 package com.example.prepyy
 
-import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -50,72 +49,71 @@ class QuizActivity : AppCompatActivity() {
             if (currentQuestionIndex < questions.size) {
                 displayQuestion(currentQuestionIndex)
             } else {
-                showResult()
+                displayResult()
             }
         }
 
         optionButtons.forEachIndexed { index, button ->
             button.setOnClickListener {
                 checkAnswer(index)
+                disableOptions()
             }
         }
     }
 
-    private fun parseQuestions(quizJson: String?): List<Question> {
-        val questions = mutableListOf<Question>()
-        quizJson?.let {
-            try {
-                val jsonArray = JSONArray(it)
-                for (i in 0 until jsonArray.length()) {
-                    val questionObj = jsonArray.getJSONObject(i)
-                    val question = Question(
-                        questionObj.getString("question"),
-                        questionObj.getJSONArray("options").let { options ->
-                            List(options.length()) { j -> options.getString(j) }
-                        },
-                        questionObj.getInt("correctAnswer")
-                    )
-                    questions.add(question)
-                }
-            } catch (e: JSONException) {
-                Log.e("QuizDebug", "Error parsing quiz JSON", e)
+    private fun parseQuestions(json: String?): List<Question> {
+        if (json == null) return emptyList()
+
+        return try {
+            val jsonArray = JSONArray(json)
+            List(jsonArray.length()) { index ->
+                val jsonObject = jsonArray.getJSONObject(index)
+                Question(
+                    question = jsonObject.getString("question"),
+                    options = jsonObject.getJSONArray("options").let { optionsArray ->
+                        List(optionsArray.length()) { optionsArray.getString(it) }
+                    },
+                    correctAnswer = jsonObject.getInt("correctAnswer")
+                )
             }
+        } catch (e: JSONException) {
+            Log.e("QuizActivity", "Error parsing questions", e)
+            emptyList()
         }
-        return questions
     }
 
     private fun displayQuestion(index: Int) {
-        if (index < questions.size) {
-            val question = questions[index]
-            questionTextView.text = question.text
-            question.options.forEachIndexed { i, option ->
-                optionButtons[i].text = option
-                optionButtons[i].isEnabled = true
-                optionButtons[i].setBackgroundResource(android.R.color.background_light)
-            }
-            nextButton.visibility = View.GONE
+        val question = questions[index]
+        questionTextView.text = question.question
+        optionButtons.forEachIndexed { i, button ->
+            button.text = question.options[i]
+            button.isEnabled = true
         }
+        nextButton.visibility = View.GONE
     }
 
-    private fun checkAnswer(selectedIndex: Int) {
-        val currentQuestion = questions[currentQuestionIndex]
-        if (selectedIndex == currentQuestion.correctAnswer) {
-            optionButtons[selectedIndex].setBackgroundResource(android.R.color.holo_green_light)
+    private fun checkAnswer(selectedOptionIndex: Int) {
+        val correctAnswerIndex = questions[currentQuestionIndex].correctAnswer
+        if (selectedOptionIndex == correctAnswerIndex) {
             score++
-        } else {
-            optionButtons[selectedIndex].setBackgroundResource(android.R.color.holo_red_light)
-            optionButtons[currentQuestion.correctAnswer].setBackgroundResource(android.R.color.holo_green_light)
         }
-        optionButtons.forEach { it.isEnabled = false }
+        Toast.makeText(this, if (selectedOptionIndex == correctAnswerIndex) "Correct!" else "Wrong!", Toast.LENGTH_SHORT).show()
         nextButton.visibility = View.VISIBLE
     }
 
-    private fun showResult() {
-        val resultMessage = "You scored $score out of ${questions.size}"
-        // You can show this in a dialog or a new activity
-        Toast.makeText(this, resultMessage, Toast.LENGTH_LONG).show()
-        finish()
+    private fun disableOptions() {
+        optionButtons.forEach { it.isEnabled = false }
     }
 
-    data class Question(val text: String, val options: List<String>, val correctAnswer: Int)
+    private fun displayResult() {
+        questionTextView.text = "You scored $score out of ${questions.size}"
+        optionButtons.forEach { it.visibility = View.GONE }
+        nextButton.visibility = View.GONE
+    }
 }
+
+data class Question(
+    val question: String,
+    val options: List<String>,
+    val correctAnswer: Int
+)

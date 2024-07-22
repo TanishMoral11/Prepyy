@@ -57,11 +57,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         takeQuizButton.setOnClickListener {
-            if (isGeneratingQuiz) {
-                Toast.makeText(this, "Please wait, quiz is generating...", Toast.LENGTH_SHORT).show()
-            } else {
-                generateQuizAndNavigate()
-            }
+            generateQuizAndNavigate()
         }
 
         takeQuizButton.visibility = View.GONE
@@ -136,8 +132,10 @@ class MainActivity : AppCompatActivity() {
                 val response = geminiModel.generateContent(content)
                 explanationTextView.text = response.text?.toString() ?: "No explanation available"
                 takeQuizButton.visibility = View.VISIBLE
+                pdfContent = input.toString() // Store the content for quiz generation
             } catch (e: Exception) {
                 explanationTextView.text = "Error analyzing content: ${e.message}"
+                takeQuizButton.visibility = View.GONE
             }
         }
     }
@@ -148,8 +146,13 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        if (pdfContent.isBlank()) {
+            Toast.makeText(this, "Please upload a document first", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         isGeneratingQuiz = true
-        takeQuizButton.isEnabled = false // Optionally disable the button while generating
+        takeQuizButton.isEnabled = false
 
         CoroutineScope(Dispatchers.Main).launch {
             try {
@@ -164,58 +167,20 @@ class MainActivity : AppCompatActivity() {
 
                 Log.d("QuizDebug", "Received response from Gemini: $quizJson")
 
-                if (quizJson.isNotBlank()) {
+                if (quizJson.isNotBlank() && quizJson.startsWith("[")) {
                     navigateToQuiz(quizJson)
                 } else {
-                    Log.e("QuizDebug", "Empty response from API")
-                    val fallbackQuizJson = generateFallbackQuiz()
-                    navigateToQuiz(fallbackQuizJson)
+                    Log.e("QuizDebug", "Invalid response from API")
+                    Toast.makeText(this@MainActivity, "Invalid quiz format received", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 Log.e("QuizDebug", "Error generating quiz", e)
-                val fallbackQuizJson = generateFallbackQuiz()
-                navigateToQuiz(fallbackQuizJson)
+                Toast.makeText(this@MainActivity, "Error generating quiz", Toast.LENGTH_SHORT).show()
             } finally {
                 isGeneratingQuiz = false
-                takeQuizButton.isEnabled = true // Re-enable the button
+                takeQuizButton.isEnabled = true
             }
         }
-    }
-
-    private fun parseQuizText(quizText: String): String {
-        val questions = quizText.split("\n\n")
-        val jsonArray = JSONArray()
-
-        for (questionText in questions) {
-            try {
-                val lines = questionText.split("\n")
-                if (lines.size >= 6) {
-                    val question = lines[0].removePrefix("Q: ")
-                    val options = lines.subList(1, 5).map { it.substring(3) }
-                    val correctAnswer = lines[5].removePrefix("Correct Answer: ").trim()
-                    val correctIndex = when (correctAnswer) {
-                        "A" -> 0
-                        "B" -> 1
-                        "C" -> 2
-                        "D" -> 3
-                        else -> -1
-                    }
-
-                    if (correctIndex != -1) {
-                        val questionObj = JSONObject().apply {
-                            put("question", question)
-                            put("options", JSONArray(options))
-                            put("correctAnswer", correctIndex)
-                        }
-                        jsonArray.put(questionObj)
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("QuizDebug", "Error parsing question: $questionText", e)
-            }
-        }
-
-        return jsonArray.toString()
     }
 
     private fun navigateToQuiz(quizJson: String) {
@@ -224,22 +189,5 @@ class MainActivity : AppCompatActivity() {
             putExtra("EXPLANATION", explanationTextView.text.toString())
         }
         startActivity(intent)
-    }
-
-    private fun generateFallbackQuiz(): String {
-        return """
-            [
-                {
-                    "question": "What is the capital of France?",
-                    "options": ["London", "Berlin", "Paris", "Madrid"],
-                    "correctAnswer": 2
-                },
-                {
-                    "question": "Who wrote 'Romeo and Juliet'?",
-                    "options": ["Charles Dickens", "William Shakespeare", "Jane Austen", "Mark Twain"],
-                    "correctAnswer": 1
-                }
-            ]
-        """.trimIndent()
     }
 }

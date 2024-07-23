@@ -35,12 +35,10 @@ class QuizActivity : AppCompatActivity() {
         val quizJson = intent.getStringExtra("QUIZ_JSON") ?: ""
         val explanation = intent.getStringExtra("EXPLANATION")
 
-        // Log the received quiz JSON
         Log.d("QuizDebug", "Received Quiz JSON: $quizJson")
 
         if (quizJson.isNotEmpty()) {
             try {
-                // Remove markdown code block syntax and parse JSON
                 val cleanedJson = quizJson.replace("```json", "").replace("```", "").trim()
                 quizData = JSONArray(cleanedJson)
                 currentQuestionIndex = 0
@@ -71,13 +69,14 @@ class QuizActivity : AppCompatActivity() {
             val questionObject = quizData.getJSONObject(currentQuestionIndex)
             val question = questionObject.getString("question")
             val options = questionObject.getJSONArray("options")
+            val correctAnswer = questionObject.getInt("correctAnswer")
 
             questionTextView.text = question
             for (i in optionButtons.indices) {
                 optionButtons[i].text = options.getString(i)
                 optionButtons[i].isEnabled = true
                 optionButtons[i].setOnClickListener {
-                    checkAnswer(i, questionObject.getInt("correctAnswer"))
+                    checkAnswer(i, correctAnswer)
                 }
             }
 
@@ -85,7 +84,8 @@ class QuizActivity : AppCompatActivity() {
         } catch (e: JSONException) {
             Log.e("QuizDebug", "Error displaying question", e)
             Toast.makeText(this, "Error displaying question", Toast.LENGTH_SHORT).show()
-            showNextQuestion() // Skip to next question if there's an error
+            currentQuestionIndex++
+            showNextQuestion()
         }
     }
 
@@ -97,9 +97,7 @@ class QuizActivity : AppCompatActivity() {
             Toast.makeText(this, "Incorrect. The correct answer was ${optionButtons[correctAnswer].text}", Toast.LENGTH_SHORT).show()
         }
 
-        // Disable option buttons after answer is selected
         optionButtons.forEach { it.isEnabled = false }
-
         nextButton.visibility = View.VISIBLE
         currentQuestionIndex++
     }
@@ -111,7 +109,5 @@ class QuizActivity : AppCompatActivity() {
 
         val resultText = "Your score: $score out of ${quizData.length()}"
         Toast.makeText(this, resultText, Toast.LENGTH_LONG).show()
-
-        // You can add a TextView to display the result permanently if desired
     }
 }

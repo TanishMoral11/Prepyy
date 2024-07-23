@@ -1,6 +1,5 @@
 package com.example.prepyy
 
-import Question
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
@@ -25,11 +24,12 @@ import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.decodeFromString
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
-
 
 class MainActivity : AppCompatActivity() {
 
@@ -123,7 +123,7 @@ class MainActivity : AppCompatActivity() {
     private fun analyzeWithGemini(input: Any) {
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                 maincontent = when (input) {
+                maincontent = when (input) {
                     is String -> content {
                         text("Explain the following content in short and very easy way like 14 year old kid:\n\n$input")
                     }
@@ -228,11 +228,4 @@ class MainActivity : AppCompatActivity() {
         }
         startActivity(intent)
     }
-    fun parseQuizJson(jsonString: String): List<Question> {
-        // Remove markdown code block indicators and trim whitespace
-        val cleanedJson = jsonString.replace("```json", "").replace("```", "").trim()
-
-        return Json.decodeFromString<List<Question>>(cleanedJson)
-    }
-
 }

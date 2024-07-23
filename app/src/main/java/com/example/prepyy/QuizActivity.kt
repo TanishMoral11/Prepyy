@@ -7,79 +7,109 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.decodeFromString
+import org.json.JSONArray
+import org.json.JSONException
 
 class QuizActivity : AppCompatActivity() {
-
     private lateinit var questionTextView: TextView
-    private lateinit var optionAButton: Button
-    private lateinit var optionBButton: Button
-    private lateinit var optionCButton: Button
-    private lateinit var optionDButton: Button
+    private lateinit var optionButtons: List<Button>
     private lateinit var nextButton: Button
+
     private lateinit var questions: List<Question>
     private var currentQuestionIndex = 0
+    private var score = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_quiz)
 
         questionTextView = findViewById(R.id.questionTextView)
-        optionAButton = findViewById(R.id.optionAButton)
-        optionBButton = findViewById(R.id.optionBButton)
-        optionCButton = findViewById(R.id.optionCButton)
-        optionDButton = findViewById(R.id.optionDButton)
+        optionButtons = listOf(
+            findViewById(R.id.optionAButton),
+            findViewById(R.id.optionBButton),
+            findViewById(R.id.optionCButton),
+            findViewById(R.id.optionDButton)
+        )
         nextButton = findViewById(R.id.nextButton)
 
         val quizJson = intent.getStringExtra("QUIZ_JSON")
-        val explanation = intent.getStringExtra("EXPLANATION")
+        Log.d("QuizDebug", "Received quiz JSON in QuizActivity: $quizJson")
 
-        if (quizJson != null) {
-            try {
-                questions = Json.decodeFromString(quizJson)
-                displayQuestion()
-            } catch (e: Exception) {
-                Log.e("QuizActivity", "Error parsing quiz JSON", e)
-                Toast.makeText(this, "Error loading quiz", Toast.LENGTH_SHORT).show()
+        questions = parseQuestions(quizJson)
+        if (questions.isEmpty()) {
+            // Handle error - no questions parsed
+            Toast.makeText(this, "Error parsing questions", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
+        displayQuestion(currentQuestionIndex)
+
+        nextButton.setOnClickListener {
+            currentQuestionIndex++
+            if (currentQuestionIndex < questions.size) {
+                displayQuestion(currentQuestionIndex)
+            } else {
+                displayResult()
             }
         }
 
-        optionAButton.setOnClickListener { checkAnswer(0) }
-        optionBButton.setOnClickListener { checkAnswer(1) }
-        optionCButton.setOnClickListener { checkAnswer(2) }
-        optionDButton.setOnClickListener { checkAnswer(3) }
-
-        nextButton.setOnClickListener { nextQuestion() }
-    }
-
-    private fun displayQuestion() {
-        if (currentQuestionIndex < questions.size) {
-            val question = questions[currentQuestionIndex]
-            questionTextView.text = question.question
-            optionAButton.text = question.options[0]
-            optionBButton.text = question.options[1]
-            optionCButton.text = question.options[2]
-            optionDButton.text = question.options[3]
-        } else {
-            Toast.makeText(this, "Quiz finished!", Toast.LENGTH_SHORT).show()
-            nextButton.visibility = View.GONE
+        optionButtons.forEachIndexed { index, button ->
+            button.setOnClickListener {
+                checkAnswer(index)
+                disableOptions()
+            }
         }
     }
 
-    private fun checkAnswer(selectedIndex: Int) {
-        val correctAnswer = questions[currentQuestionIndex].correctAnswer
-        if (selectedIndex == correctAnswer) {
-            Toast.makeText(this, "Correct!", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(this, "Incorrect. Correct answer: ${questions[currentQuestionIndex].options[correctAnswer]}", Toast.LENGTH_SHORT).show()
+    private fun parseQuestions(json: String?): List<Question> {
+        if (json == null) return emptyList()
+
+        return try {
+            val jsonArray = JSONArray(json)
+            List(jsonArray.length()) { index ->
+                val jsonObject = jsonArray.getJSONObject(index)
+                Question(
+                    question = jsonObject.getString("question"),
+                    options = jsonObject.getJSONArray("options").let { optionsArray ->
+                        List(optionsArray.length()) { optionsArray.getString(it) }
+                    },
+                    correctAnswer = jsonObject.getInt("correctAnswer")
+                )
+            }
+        } catch (e: JSONException) {
+            Log.e("QuizActivity", "Error parsing questions", e)
+            emptyList()
         }
+    }
+
+    private fun displayQuestion(index: Int) {
+        val question = questions[index]
+        questionTextView.text = question.question
+        optionButtons.forEachIndexed { i, button ->
+            button.text = question.options[i]
+            button.isEnabled = true
+        }
+        nextButton.visibility = View.GONE
+    }
+
+    private fun checkAnswer(selectedOptionIndex: Int) {
+        val correctAnswerIndex = questions[currentQuestionIndex].correctAnswer
+        if (selectedOptionIndex == correctAnswerIndex) {
+            score++
+        }
+        Toast.makeText(this, if (selectedOptionIndex == correctAnswerIndex) "Correct!" else "Wrong!", Toast.LENGTH_SHORT).show()
         nextButton.visibility = View.VISIBLE
     }
 
-    private fun nextQuestion() {
-        currentQuestionIndex++
-        displayQuestion()
+    private fun disableOptions() {
+        optionButtons.forEach { it.isEnabled = false }
+    }
+
+    private fun displayResult() {
+        questionTextView.text = "You scored $score out of ${questions.size}"
+        optionButtons.forEach { it.visibility = View.GONE }
         nextButton.visibility = View.GONE
     }
 }
+

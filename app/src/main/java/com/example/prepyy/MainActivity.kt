@@ -161,13 +161,7 @@ class MainActivity : AppCompatActivity() {
             try {
                 Log.d("QuizDebug", "Starting quiz generation")
                 val quizPrompt = content {
-                    text("Based on the following content, generate 5 multiple-choice questions with 4 options each. Format the response as a JSON array with each question object containing 'question', 'options' (as an array), and 'correctAnswer' (as an index 0-3).")
-                    maincontent.parts.filterIsInstance<com.google.ai.client.generativeai.type.ImagePart>().firstOrNull()?.image?.let {
-                        image(
-                            it
-                        )
-                    }
-                    text(maincontent.parts.filterIsInstance<com.google.ai.client.generativeai.type.TextPart>().firstOrNull()?.text ?: "")
+                    text("Based on the following content, generate 5 multiple-choice questions with 4 options each. Format the response as a JSON array with each question object containing 'question', 'options' (as an array), and 'correctAnswer' (as an index 0-3).\n\nContent: ${explanationTextView.text}")
                 }
 
                 Log.d("QuizDebug", "Sending request to Gemini")

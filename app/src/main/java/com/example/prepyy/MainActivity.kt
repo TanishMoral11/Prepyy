@@ -16,6 +16,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.Content
 import com.google.ai.client.generativeai.type.content
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfReader
@@ -37,6 +38,7 @@ class MainActivity : AppCompatActivity() {
     private val geminiModel = GenerativeModel(modelName = "gemini-1.5-pro", apiKey = apiKey)
     private var pdfContent: String = ""
     private var isGeneratingQuiz = false
+    private lateinit var maincontent: Content
 
     private val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
@@ -119,7 +121,7 @@ class MainActivity : AppCompatActivity() {
     private fun analyzeWithGemini(input: Any) {
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                val content = when (input) {
+                 maincontent = when (input) {
                     is String -> content {
                         text("Explain the following content in short and very easy way like 14 year old kid:\n\n$input")
                     }
@@ -130,7 +132,7 @@ class MainActivity : AppCompatActivity() {
                     else -> throw IllegalArgumentException("Unsupported input type")
                 }
 
-                val response = geminiModel.generateContent(content)
+                val response = geminiModel.generateContent(maincontent)
                 explanationTextView.text = response.text?.toString() ?: "No explanation available"
                 takeQuizButton.visibility = View.VISIBLE
                 pdfContent = input.toString() // Store the content for quiz generation
@@ -147,8 +149,8 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        if (pdfContent.isBlank()) {
-            Toast.makeText(this, "Please upload a document first", Toast.LENGTH_SHORT).show()
+        if (!::maincontent.isInitialized) {
+            Toast.makeText(this, "Please analyze a document first", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -158,12 +160,18 @@ class MainActivity : AppCompatActivity() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 Log.d("QuizDebug", "Starting quiz generation")
-                val content = content {
-                    text("Based on the following content, generate 5 multiple-choice questions with 4 options each. Format the response as a JSON array with each question object containing 'question', 'options' (as an array), and 'correctAnswer' (as an index 0-3). Content:\n\n$pdfContent")
+                val quizPrompt = content {
+                    text("Based on the following content, generate 5 multiple-choice questions with 4 options each. Format the response as a JSON array with each question object containing 'question', 'options' (as an array), and 'correctAnswer' (as an index 0-3).")
+                    maincontent.parts.filterIsInstance<com.google.ai.client.generativeai.type.ImagePart>().firstOrNull()?.image?.let {
+                        image(
+                            it
+                        )
+                    }
+                    text(maincontent.parts.filterIsInstance<com.google.ai.client.generativeai.type.TextPart>().firstOrNull()?.text ?: "")
                 }
 
                 Log.d("QuizDebug", "Sending request to Gemini")
-                val response = geminiModel.generateContent(content)
+                val response = geminiModel.generateContent(quizPrompt)
                 val quizJson = response.text?.toString() ?: ""
 
                 Log.d("QuizDebug", "Received response from Gemini: $quizJson")

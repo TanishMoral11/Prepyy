@@ -1,5 +1,6 @@
 package com.example.prepyy
 
+import Question
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -113,8 +114,3 @@ class QuizActivity : AppCompatActivity() {
     }
 }
 
-data class Question(
-    val question: String,
-    val options: List<String>,
-    val correctAnswer: Int
-)

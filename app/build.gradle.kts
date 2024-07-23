@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+
 }
 
 android {
@@ -52,5 +53,7 @@ dependencies {
     implementation ("com.itextpdf:itext7-core:7.1.16")
     implementation ("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation ("com.google.code.gson:gson:2.8.8")
+    implementation ("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.0")
+
 
 }

@@ -1,5 +1,6 @@
 package com.example.prepyy
 
+import Question
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
@@ -28,6 +29,7 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -226,6 +228,11 @@ class MainActivity : AppCompatActivity() {
         }
         startActivity(intent)
     }
+    fun parseQuizJson(jsonString: String): List<Question> {
+        // Remove markdown code block indicators and trim whitespace
+        val cleanedJson = jsonString.replace("```json", "").replace("```", "").trim()
 
+        return Json.decodeFromString<List<Question>>(cleanedJson)
+    }
 
 }

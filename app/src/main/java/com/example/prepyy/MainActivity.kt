@@ -189,19 +189,32 @@ class MainActivity : AppCompatActivity() {
 
     private fun isValidQuizJson(json: String): Boolean {
         return try {
-            val jsonArray = JSONArray(json)
+            // Remove any markdown formatting characters
+            val cleanedJson = json.replace("```json", "").replace("```", "").trim()
+
+            // Parse the cleaned JSON string
+            val jsonArray = JSONArray(cleanedJson)
+
+            // Validate the structure of each question
             for (i in 0 until jsonArray.length()) {
                 val jsonObject = jsonArray.getJSONObject(i)
                 jsonObject.getString("question")
                 val optionsArray = jsonObject.getJSONArray("options")
+                if (optionsArray.length() != 4) {
+                    return false // Ensure there are exactly 4 options
+                }
                 for (j in 0 until optionsArray.length()) {
                     optionsArray.getString(j)
                 }
-                jsonObject.getInt("correctAnswer")
+                val correctAnswer = jsonObject.getInt("correctAnswer")
+                if (correctAnswer < 0 || correctAnswer > 3) {
+                    return false // Ensure correctAnswer is within valid range
+                }
             }
             true
         } catch (e: JSONException) {
             Log.e("QuizDebug", "Invalid JSON format", e)
+            Log.e("QuizDebug", "Received JSON: $json")
             false
         }
     }

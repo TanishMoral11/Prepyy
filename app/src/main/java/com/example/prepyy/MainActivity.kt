@@ -1,6 +1,6 @@
-package com.example.prepyy
+package com.example.prepyy // Package declaration for the application
 
-import android.app.Activity
+import android.app.Activity // Importing necessary Android libraries
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -15,220 +15,214 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.GenerativeModel // Importing AI libraries
 import com.google.ai.client.generativeai.type.Content
 import com.google.ai.client.generativeai.type.content
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfReader
 import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineScope // Importing Kotlin Coroutines
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONException
 import java.io.IOException
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity() { // Main activity class inheriting from AppCompatActivity
 
-    private lateinit var uploadButton: Button
+    private lateinit var uploadButton: Button // Declaration of UI elements
     private lateinit var explanationTextView: TextView
     private lateinit var takeQuizButton: Button
-    private val apiKey = "AIzaSyAaiqzhC6z-HfLrw0LU7108pbp8OVb_Hw4"
-    private val geminiModel = GenerativeModel(modelName = "gemini-1.5-pro", apiKey = apiKey)
-    private var pdfContent: String = ""
-    private var isGeneratingQuiz = false
-    private lateinit var maincontent: Content
+    private val apiKey = "AIzaSyAaiqzhC6z-HfLrw0LU7108pbp8OVb_Hw4" // API key for Gemini
+    private val geminiModel = GenerativeModel(modelName = "gemini-1.5-pro", apiKey = apiKey) // Initializing the GenerativeModel
+    private var pdfContent: String = "" // Variable to store PDF content
+    private var isGeneratingQuiz = false // Flag to check if quiz is being generated
+    private lateinit var maincontent: Content // Variable to hold content to be analyzed
 
-    private val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val uri: Uri? = result.data?.data
-            uri?.let { processFile(it) }
+    private val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result -> // Handling file picking result
+        if (result.resultCode == Activity.RESULT_OK) { // Check if result is OK
+            val uri: Uri? = result.data?.data // Get the URI of the selected file
+            uri?.let { processFile(it) } // Process the file if URI is not null
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+    override fun onCreate(savedInstanceState: Bundle?) { // Override onCreate method
+        super.onCreate(savedInstanceState) // Call superclass implementation
+        setContentView(R.layout.activity_main) // Set the content view to activity_main layout
 
-        uploadButton = findViewById(R.id.uploadButton)
+        uploadButton = findViewById(R.id.uploadButton) // Initialize UI elements
         explanationTextView = findViewById(R.id.explanationTextView)
         takeQuizButton = findViewById(R.id.takeQuizButton)
 
-        uploadButton.setOnClickListener {
-            openFilePicker()
+        uploadButton.setOnClickListener { // Set click listener for upload button
+            openFilePicker() // Open file picker when button is clicked
         }
 
-        takeQuizButton.setOnClickListener {
-            generateQuizAndNavigate()
+        takeQuizButton.setOnClickListener { // Set click listener for take quiz button
+            generateQuizAndNavigate() // Generate quiz and navigate when button is clicked
         }
 
-        takeQuizButton.visibility = View.GONE
+        takeQuizButton.visibility = View.GONE // Hide the take quiz button initially
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets -> // Adjust window insets for proper layout
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
     }
 
-    private fun openFilePicker() {
-        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
-            type = "*/*"
-            putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/pdf", "image/jpeg", "image/png"))
+    private fun openFilePicker() { // Method to open file picker
+        val intent = Intent(Intent.ACTION_GET_CONTENT).apply { // Create an intent for picking content
+            type = "*/*" // Set type to all files
+            putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/pdf", "image/jpeg", "image/png")) // Allow only specific file types
         }
-        getContent.launch(intent)
+        getContent.launch(intent) // Launch the file picker activity
     }
 
-    private fun processFile(uri: Uri) {
-        // Clear previous content
-        pdfContent = ""
-        explanationTextView.text = ""
-        takeQuizButton.visibility = View.GONE
-        isGeneratingQuiz = false
+    private fun processFile(uri: Uri) { // Method to process the selected file
+        pdfContent = "" // Clear previous content
+        explanationTextView.text = "" // Clear explanation text view
+        takeQuizButton.visibility = View.GONE // Hide take quiz button
+        isGeneratingQuiz = false // Reset quiz generation flag
 
-        val mimeType = contentResolver.getType(uri)
-        when {
-            mimeType == "application/pdf" -> extractTextFromPdf(uri)
-            mimeType?.startsWith("image/") == true -> processImage(uri)
-            else -> explanationTextView.text = "Unsupported file type"
+        val mimeType = contentResolver.getType(uri) // Get the MIME type of the file
+        when { // Check the MIME type and handle accordingly
+            mimeType == "application/pdf" -> extractTextFromPdf(uri) // If PDF, extract text
+            mimeType?.startsWith("image/") == true -> processImage(uri) // If image, process image
+            else -> explanationTextView.text = "Unsupported file type" // If unsupported, show error message
         }
     }
 
-    private fun extractTextFromPdf(uri: Uri) {
+    private fun extractTextFromPdf(uri: Uri) { // Method to extract text from PDF
         try {
-            contentResolver.openInputStream(uri)?.use { inputStream ->
-                val pdfReader = PdfReader(inputStream)
-                val pdfDocument = PdfDocument(pdfReader)
+            contentResolver.openInputStream(uri)?.use { inputStream -> // Open input stream for the file
+                val pdfReader = PdfReader(inputStream) // Create PDF reader
+                val pdfDocument = PdfDocument(pdfReader) // Create PDF document
                 val pageNum = pdfDocument.numberOfPages.coerceAtMost(1) // Get text from first page only
-                pdfContent = PdfTextExtractor.getTextFromPage(pdfDocument.getPage(pageNum))
-                pdfDocument.close()
+                pdfContent = PdfTextExtractor.getTextFromPage(pdfDocument.getPage(pageNum)) // Extract text from page
+                pdfDocument.close() // Close the document
 
-                Log.d("QuizDebug", "PDF Content: $pdfContent")
+                Log.d("QuizDebug", "PDF Content: $pdfContent") // Log the extracted content
 
-                analyzeWithGemini(pdfContent)
+                analyzeWithGemini(pdfContent) // Analyze the extracted content with Gemini
             }
-        } catch (e: IOException) {
-            explanationTextView.text = "Error extracting text from PDF: ${e.message}"
+        } catch (e: IOException) { // Handle exceptions
+            explanationTextView.text = "Error extracting text from PDF: ${e.message}" // Show error message
         }
     }
 
-    private fun processImage(uri: Uri) {
+    private fun processImage(uri: Uri) { // Method to process image
         try {
-            contentResolver.openInputStream(uri)?.use { inputStream ->
-                val bitmap = BitmapFactory.decodeStream(inputStream)
-                analyzeWithGemini(bitmap)
+            contentResolver.openInputStream(uri)?.use { inputStream -> // Open input stream for the file
+                val bitmap = BitmapFactory.decodeStream(inputStream) // Decode input stream to bitmap
+                analyzeWithGemini(bitmap) // Analyze the bitmap with Gemini
             }
-        } catch (e: IOException) {
-            explanationTextView.text = "Error processing image: ${e.message}"
+        } catch (e: IOException) { // Handle exceptions
+            explanationTextView.text = "Error processing image: ${e.message}" // Show error message
         }
     }
 
-    private fun analyzeWithGemini(input: Any) {
-        CoroutineScope(Dispatchers.Main).launch {
+    private fun analyzeWithGemini(input: Any) { // Method to analyze content with Gemini
+        CoroutineScope(Dispatchers.Main).launch { // Launch a coroutine on the main thread
             try {
-                maincontent = when (input) {
-                    is String -> content {
+                maincontent = when (input) { // Create content based on input type
+                    is String -> content { // If input is String, create text content
                         text("Explain the following content in short and very easy way like 14 year old kid:\n\n$input")
                     }
-                    is Bitmap -> content {
+                    is Bitmap -> content { // If input is Bitmap, create image content
                         image(input)
                         text("Explain the content of this image in short and very easy way like 14 year old kid:")
                     }
-                    else -> throw IllegalArgumentException("Unsupported input type")
+                    else -> throw IllegalArgumentException("Unsupported input type") // Throw exception if input type is unsupported
                 }
 
-                val response = geminiModel.generateContent(maincontent)
-                explanationTextView.text = response.text?.toString() ?: "No explanation available"
-                takeQuizButton.visibility = View.VISIBLE
+                val response = geminiModel.generateContent(maincontent) // Generate content using Gemini model
+                explanationTextView.text = response.text?.toString() ?: "No explanation available" // Set the explanation text view with the response
+                takeQuizButton.visibility = View.VISIBLE // Make the take quiz button visible
                 pdfContent = input.toString() // Store the content for quiz generation
-            } catch (e: Exception) {
-                explanationTextView.text = "Error analyzing content: ${e.message}"
-                takeQuizButton.visibility = View.GONE
+            } catch (e: Exception) { // Handle exceptions
+                explanationTextView.text = "Error analyzing content: ${e.message}" // Show error message
+                takeQuizButton.visibility = View.GONE // Hide the take quiz button
             }
         }
     }
 
-    private fun generateQuizAndNavigate() {
-        if (isGeneratingQuiz) {
-            Toast.makeText(this, "Please wait, quiz is generating...", Toast.LENGTH_SHORT).show()
-            return
+    private fun generateQuizAndNavigate() { // Method to generate quiz and navigate
+        if (isGeneratingQuiz) { // If quiz is already generating
+            Toast.makeText(this, "Please wait, quiz is generating...", Toast.LENGTH_SHORT).show() // Show a toast message
+            return // Return early
         }
 
-        if (!::maincontent.isInitialized) {
-            Toast.makeText(this, "Please analyze a document first", Toast.LENGTH_SHORT).show()
-            return
+        if (!::maincontent.isInitialized) { // If main content is not initialized
+            Toast.makeText(this, "Please analyze a document first", Toast.LENGTH_SHORT).show() // Show a toast message
+            return // Return early
         }
 
-        isGeneratingQuiz = true
-        takeQuizButton.isEnabled = false
+        isGeneratingQuiz = true // Set quiz generation flag
+        takeQuizButton.isEnabled = false // Disable the take quiz button
 
-        CoroutineScope(Dispatchers.Main).launch {
+        CoroutineScope(Dispatchers.Main).launch { // Launch a coroutine on the main thread
             try {
-                Log.d("QuizDebug", "Starting quiz generation")
-                val quizPrompt = content {
+                Log.d("QuizDebug", "Starting quiz generation") // Log the start of quiz generation
+                val quizPrompt = content { // Create quiz prompt content
                     text("Based on the following content, generate 5 multiple-choice questions with 4 options each. Format the response as a JSON array with each question object containing 'question', 'options' (as an array), and 'correctAnswer' (as an index 0-3). Ensure that the correct answer is randomly positioned for each question.\n\nContent: ${explanationTextView.text}")
                 }
 
-                Log.d("QuizDebug", "Sending request to Gemini")
-                val response = geminiModel.generateContent(quizPrompt)
-                val quizJson = response.text?.toString() ?: ""
+                Log.d("QuizDebug", "Sending request to Gemini") // Log the request to Gemini
+                val response = geminiModel.generateContent(quizPrompt) // Generate content using Gemini model
+                val quizJson = response.text?.toString() ?: "" // Get the response text
 
-                Log.d("QuizDebug", "Received response from Gemini: $quizJson")
+                Log.d("QuizDebug", "Received response from Gemini: $quizJson") // Log the response from Gemini
 
-                // Validate the JSON format
-                if (isValidQuizJson(quizJson)) {
-                    navigateToQuiz(quizJson)
-                } else {
-                    Log.e("QuizDebug", "Invalid response from API")
-                    Toast.makeText(this@MainActivity, "Invalid quiz format received", Toast.LENGTH_SHORT).show()
+                if (isValidQuizJson(quizJson)) { // Validate the JSON format of the quiz
+                    navigateToQuiz(quizJson) // Navigate to the quiz activity if valid
+                } else { // If invalid
+                    Log.e("QuizDebug", "Invalid response from API") // Log the error
+                    Toast.makeText(this@MainActivity, "Invalid quiz format received", Toast.LENGTH_SHORT).show() // Show a toast message
                 }
-            } catch (e: Exception) {
-                Log.e("QuizDebug", "Error generating quiz", e)
-                Toast.makeText(this@MainActivity, "Error generating quiz", Toast.LENGTH_SHORT).show()
-            } finally {
-                isGeneratingQuiz = false
-                takeQuizButton.isEnabled = true
+            } catch (e: Exception) { // Handle exceptions
+                Log.e("QuizDebug", "Error generating quiz", e) // Log the error
+                Toast.makeText(this@MainActivity, "Error generating quiz", Toast.LENGTH_SHORT).show() // Show a toast message
+            } finally { // Finally block
+                isGeneratingQuiz = false // Reset quiz generation flag
+                takeQuizButton.isEnabled = true // Enable the take quiz button
             }
         }
     }
 
-    private fun isValidQuizJson(json: String): Boolean {
+    private fun isValidQuizJson(json: String): Boolean { // Method to validate quiz JSON format
         return try {
-            // Remove any markdown formatting characters
-            val cleanedJson = json.replace("```json", "").replace("```", "").trim()
+            val cleanedJson = json.replace("```json", "").replace("```", "").trim() // Clean the JSON string
+            val jsonArray = JSONArray(cleanedJson) // Parse the cleaned JSON string
 
-            // Parse the cleaned JSON string
-            val jsonArray = JSONArray(cleanedJson)
-
-            // Validate the structure of each question
-            for (i in 0 until jsonArray.length()) {
-                val jsonObject = jsonArray.getJSONObject(i)
-                jsonObject.getString("question")
-                val optionsArray = jsonArray.getJSONObject(i).getJSONArray("options")
-                if (optionsArray.length() != 4) {
-                    return false // Ensure there are exactly 4 options
+            for (i in 0 until jsonArray.length()) { // Iterate over the JSON array
+                val jsonObject = jsonArray.getJSONObject(i) // Get each JSON object
+                jsonObject.getString("question") // Validate question string
+                val optionsArray = jsonObject.getJSONArray("options") // Validate options array
+                if (optionsArray.length() != 4) { // Ensure there are exactly 4 options
+                    return false
                 }
-                for (j in 0 until optionsArray.length()) {
-                    optionsArray.getString(j)
+                for (j in 0 until optionsArray.length()) { // Iterate over the options
+                    optionsArray.getString(j) // Validate each option
                 }
-                val correctAnswer = jsonObject.getInt("correctAnswer")
-                if (correctAnswer < 0 || correctAnswer > 3) {
-                    return false // Ensure correctAnswer is within valid range
+                val correctAnswer = jsonObject.getInt("correctAnswer") // Validate correct answer index
+                if (correctAnswer < 0 || correctAnswer > 3) { // Ensure correctAnswer is within valid range
+                    return false
                 }
             }
-            true
-        } catch (e: JSONException) {
-            Log.e("QuizDebug", "Invalid JSON format", e)
-            Log.e("QuizDebug", "Received JSON: $json")
-            false
+            true // Return true if valid
+        } catch (e: JSONException) { // Handle exceptions
+            Log.e("QuizDebug", "Invalid JSON format", e) // Log the error
+            Log.e("QuizDebug", "Received JSON: $json") // Log the received JSON
+            false // Return false if invalid
         }
     }
 
-    private fun navigateToQuiz(quizJson: String) {
-        val intent = Intent(this@MainActivity, QuizActivity::class.java).apply {
-            putExtra("QUIZ_JSON", quizJson)
-            putExtra("EXPLANATION", explanationTextView.text.toString())
+    private fun navigateToQuiz(quizJson: String) { // Method to navigate to quiz activity
+        val intent = Intent(this@MainActivity, QuizActivity::class.java).apply { // Create an intent for QuizActivity
+            putExtra("QUIZ_JSON", quizJson) // Put the quiz JSON as extra
+            putExtra("EXPLANATION", explanationTextView.text.toString()) // Put the explanation text as extra
         }
-        startActivity(intent)
+        startActivity(intent) // Start the quiz activity
     }
 }

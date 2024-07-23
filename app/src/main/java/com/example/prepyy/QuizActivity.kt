@@ -15,9 +15,9 @@ class QuizActivity : AppCompatActivity() {
     private lateinit var optionButtons: List<Button>
     private lateinit var nextButton: Button
 
-    private lateinit var questions: List<Question>
-    private var currentQuestionIndex = 0
-    private var score = 0
+    private var quizData: JSONArray = JSONArray()
+    private var currentQuestionIndex: Int = 0
+    private var score: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,84 +32,86 @@ class QuizActivity : AppCompatActivity() {
         )
         nextButton = findViewById(R.id.nextButton)
 
-        val quizJson = intent.getStringExtra("QUIZ_JSON")
-        Log.d("QuizDebug", "Received quiz JSON in QuizActivity: $quizJson")
+        val quizJson = intent.getStringExtra("QUIZ_JSON") ?: ""
+        val explanation = intent.getStringExtra("EXPLANATION")
 
-        questions = parseQuestions(quizJson)
-        if (questions.isEmpty()) {
-            // Handle error - no questions parsed
-            Toast.makeText(this, "Error parsing questions", Toast.LENGTH_SHORT).show()
+        // Log the received quiz JSON
+        Log.d("QuizDebug", "Received Quiz JSON: $quizJson")
+
+        if (quizJson.isNotEmpty()) {
+            try {
+                // Remove markdown code block syntax and parse JSON
+                val cleanedJson = quizJson.replace("```json", "").replace("```", "").trim()
+                quizData = JSONArray(cleanedJson)
+                currentQuestionIndex = 0
+                score = 0
+                showNextQuestion()
+            } catch (e: JSONException) {
+                Log.e("QuizDebug", "Error parsing quiz JSON", e)
+                Toast.makeText(this, "Error loading quiz", Toast.LENGTH_SHORT).show()
+                finish()
+            }
+        } else {
+            Toast.makeText(this, "No quiz data received", Toast.LENGTH_SHORT).show()
             finish()
+        }
+
+        nextButton.setOnClickListener {
+            showNextQuestion()
+        }
+    }
+
+    private fun showNextQuestion() {
+        if (currentQuestionIndex >= quizData.length()) {
+            showQuizResult()
             return
         }
 
-        displayQuestion(currentQuestionIndex)
+        try {
+            val questionObject = quizData.getJSONObject(currentQuestionIndex)
+            val question = questionObject.getString("question")
+            val options = questionObject.getJSONArray("options")
 
-        nextButton.setOnClickListener {
-            currentQuestionIndex++
-            if (currentQuestionIndex < questions.size) {
-                displayQuestion(currentQuestionIndex)
-            } else {
-                displayResult()
+            questionTextView.text = question
+            for (i in optionButtons.indices) {
+                optionButtons[i].text = options.getString(i)
+                optionButtons[i].isEnabled = true
+                optionButtons[i].setOnClickListener {
+                    checkAnswer(i, questionObject.getInt("correctAnswer"))
+                }
             }
-        }
 
-        optionButtons.forEachIndexed { index, button ->
-            button.setOnClickListener {
-                checkAnswer(index)
-                disableOptions()
-            }
-        }
-    }
-
-    private fun parseQuestions(json: String?): List<Question> {
-        if (json == null) return emptyList()
-
-        return try {
-            val jsonArray = JSONArray(json)
-            List(jsonArray.length()) { index ->
-                val jsonObject = jsonArray.getJSONObject(index)
-                Question(
-                    question = jsonObject.getString("question"),
-                    options = jsonObject.getJSONArray("options").let { optionsArray ->
-                        List(optionsArray.length()) { optionsArray.getString(it) }
-                    },
-                    correctAnswer = jsonObject.getInt("correctAnswer")
-                )
-            }
+            nextButton.visibility = View.GONE
         } catch (e: JSONException) {
-            Log.e("QuizActivity", "Error parsing questions", e)
-            emptyList()
+            Log.e("QuizDebug", "Error displaying question", e)
+            Toast.makeText(this, "Error displaying question", Toast.LENGTH_SHORT).show()
+            showNextQuestion() // Skip to next question if there's an error
         }
     }
 
-    private fun displayQuestion(index: Int) {
-        val question = questions[index]
-        questionTextView.text = question.question
-        optionButtons.forEachIndexed { i, button ->
-            button.text = question.options[i]
-            button.isEnabled = true
-        }
-        nextButton.visibility = View.GONE
-    }
-
-    private fun checkAnswer(selectedOptionIndex: Int) {
-        val correctAnswerIndex = questions[currentQuestionIndex].correctAnswer
-        if (selectedOptionIndex == correctAnswerIndex) {
+    private fun checkAnswer(selectedIndex: Int, correctAnswer: Int) {
+        if (selectedIndex == correctAnswer) {
             score++
+            Toast.makeText(this, "Correct!", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "Incorrect. The correct answer was ${optionButtons[correctAnswer].text}", Toast.LENGTH_SHORT).show()
         }
-        Toast.makeText(this, if (selectedOptionIndex == correctAnswerIndex) "Correct!" else "Wrong!", Toast.LENGTH_SHORT).show()
-        nextButton.visibility = View.VISIBLE
-    }
 
-    private fun disableOptions() {
+        // Disable option buttons after answer is selected
         optionButtons.forEach { it.isEnabled = false }
+
+        nextButton.visibility = View.VISIBLE
+        currentQuestionIndex++
     }
 
-    private fun displayResult() {
-        questionTextView.text = "You scored $score out of ${questions.size}"
+    private fun showQuizResult() {
+        questionTextView.text = "Quiz complete!"
         optionButtons.forEach { it.visibility = View.GONE }
         nextButton.visibility = View.GONE
+
+        val resultText = "Your score: $score out of ${quizData.length()}"
+        Toast.makeText(this, resultText, Toast.LENGTH_LONG).show()
+
+        // You can add a TextView to display the result permanently if desired
     }
 }
-

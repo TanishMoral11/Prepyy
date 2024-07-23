@@ -204,7 +204,7 @@ class MainActivity : AppCompatActivity() {
             for (i in 0 until jsonArray.length()) {
                 val jsonObject = jsonArray.getJSONObject(i)
                 jsonObject.getString("question")
-                val optionsArray = jsonObject.getJSONArray("options")
+                val optionsArray = jsonArray.getJSONObject(i).getJSONArray("options")
                 if (optionsArray.length() != 4) {
                     return false // Ensure there are exactly 4 options
                 }

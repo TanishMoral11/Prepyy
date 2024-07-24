@@ -15,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.airbnb.lottie.LottieAnimationView
 import com.google.ai.client.generativeai.GenerativeModel // Importing AI libraries
 import com.google.ai.client.generativeai.type.Content
 import com.google.ai.client.generativeai.type.content
@@ -27,12 +28,16 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONException
 import java.io.IOException
+import fr.castorflex.android.smoothprogressbar.SmoothProgressBar
 
 class MainActivity : AppCompatActivity() { // Main activity class inheriting from AppCompatActivity
 
     private lateinit var uploadButton: Button // Declaration of UI elements
     private lateinit var explanationTextView: TextView
     private lateinit var takeQuizButton: Button
+    private lateinit var uploadAnimation: LottieAnimationView
+    private lateinit var progressBar: SmoothProgressBar
+
     private val apiKey = "AIzaSyAaiqzhC6z-HfLrw0LU7108pbp8OVb_Hw4" // API key for Gemini
     private val geminiModel = GenerativeModel(modelName = "gemini-1.5-pro", apiKey = apiKey) // Initializing the GenerativeModel
     private var pdfContent: String = "" // Variable to store PDF content
@@ -53,6 +58,8 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
         uploadButton = findViewById(R.id.uploadButton) // Initialize UI elements
         explanationTextView = findViewById(R.id.explanationTextView)
         takeQuizButton = findViewById(R.id.takeQuizButton)
+        uploadAnimation = findViewById(R.id.uploadAnimation)
+        progressBar = findViewById(R.id.progressBar)
 
         uploadButton.setOnClickListener { // Set click listener for upload button
             openFilePicker() // Open file picker when button is clicked
@@ -69,6 +76,11 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+    }
+
+    private fun showLoading(show: Boolean) {
+        progressBar.visibility = if (show) View.VISIBLE else View.GONE
+        uploadAnimation.visibility = if (show) View.VISIBLE else View.GONE
     }
 
     private fun openFilePicker() { // Method to open file picker
@@ -123,6 +135,7 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
     }
 
     private fun analyzeWithGemini(input: Any) { // Method to analyze content with Gemini
+        showLoading(true)
         CoroutineScope(Dispatchers.Main).launch { // Launch a coroutine on the main thread
             try {
                 maincontent = when (input) { // Create content based on input type
@@ -143,6 +156,8 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
             } catch (e: Exception) { // Handle exceptions
                 explanationTextView.text = "Error analyzing content: ${e.message}" // Show error message
                 takeQuizButton.visibility = View.GONE // Hide the take quiz button
+            } finally {
+                showLoading(false)
             }
         }
     }
@@ -170,58 +185,58 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
 
                 Log.d("QuizDebug", "Sending request to Gemini") // Log the request to Gemini
                 val response = geminiModel.generateContent(quizPrompt) // Generate content using Gemini model
-                val quizJson = response.text?.toString() ?: "" // Get the response text
+                val quizJson = response.text?.toString() ?: "" // Get the response as string
 
-                Log.d("QuizDebug", "Received response from Gemini: $quizJson") // Log the response from Gemini
+                Log.d("QuizDebug", "Received response from Gemini: $quizJson") // Log the received response
 
-                if (isValidQuizJson(quizJson)) { // Validate the JSON format of the quiz
-                    navigateToQuiz(quizJson) // Navigate to the quiz activity if valid
+                if (isValidQuizJson(quizJson)) { // Check if the response is a valid quiz JSON
+                    navigateToQuiz(quizJson) // Navigate to quiz activity
                 } else { // If invalid
-                    Log.e("QuizDebug", "Invalid response from API") // Log the error
+                    Log.e("QuizDebug", "Invalid response from API") // Log an error
                     Toast.makeText(this@MainActivity, "Invalid quiz format received", Toast.LENGTH_SHORT).show() // Show a toast message
                 }
             } catch (e: Exception) { // Handle exceptions
                 Log.e("QuizDebug", "Error generating quiz", e) // Log the error
                 Toast.makeText(this@MainActivity, "Error generating quiz", Toast.LENGTH_SHORT).show() // Show a toast message
-            } finally { // Finally block
+            } finally {
                 isGeneratingQuiz = false // Reset quiz generation flag
                 takeQuizButton.isEnabled = true // Enable the take quiz button
             }
         }
     }
 
-    private fun isValidQuizJson(json: String): Boolean { // Method to validate quiz JSON format
+    private fun isValidQuizJson(json: String): Boolean { // Method to validate quiz JSON
         return try {
             val cleanedJson = json.replace("```json", "").replace("```", "").trim() // Clean the JSON string
-            val jsonArray = JSONArray(cleanedJson) // Parse the cleaned JSON string
+            val jsonArray = JSONArray(cleanedJson) // Parse the JSON string to array
 
-            for (i in 0 until jsonArray.length()) { // Iterate over the JSON array
-                val jsonObject = jsonArray.getJSONObject(i) // Get each JSON object
-                jsonObject.getString("question") // Validate question string
-                val optionsArray = jsonObject.getJSONArray("options") // Validate options array
-                if (optionsArray.length() != 4) { // Ensure there are exactly 4 options
-                    return false
+            for (i in 0 until jsonArray.length()) { // Loop through the JSON array
+                val jsonObject = jsonArray.getJSONObject(i) // Get JSON object at index
+                jsonObject.getString("question") // Get the question string
+                val optionsArray = jsonObject.getJSONArray("options") // Get the options array
+                if (optionsArray.length() != 4) { // Check if options array length is 4
+                    return false // Return false if not
                 }
-                for (j in 0 until optionsArray.length()) { // Iterate over the options
-                    optionsArray.getString(j) // Validate each option
+                for (j in 0 until optionsArray.length()) { // Loop through options array
+                    optionsArray.getString(j) // Get option string at index
                 }
-                val correctAnswer = jsonObject.getInt("correctAnswer") // Validate correct answer index
-                if (correctAnswer < 0 || correctAnswer > 3) { // Ensure correctAnswer is within valid range
-                    return false
+                val correctAnswer = jsonObject.getInt("correctAnswer") // Get the correct answer index
+                if (correctAnswer < 0 || correctAnswer > 3) { // Check if correct answer index is valid
+                    return false // Return false if not
                 }
             }
             true // Return true if valid
-        } catch (e: JSONException) { // Handle exceptions
+        } catch (e: JSONException) { // Handle JSON exceptions
             Log.e("QuizDebug", "Invalid JSON format", e) // Log the error
             Log.e("QuizDebug", "Received JSON: $json") // Log the received JSON
-            false // Return false if invalid
+            false // Return false
         }
     }
 
     private fun navigateToQuiz(quizJson: String) { // Method to navigate to quiz activity
         val intent = Intent(this@MainActivity, QuizActivity::class.java).apply { // Create an intent for QuizActivity
-            putExtra("QUIZ_JSON", quizJson) // Put the quiz JSON as extra
-            putExtra("EXPLANATION", explanationTextView.text.toString()) // Put the explanation text as extra
+            putExtra("QUIZ_JSON", quizJson) // Put quiz JSON as extra
+            putExtra("EXPLANATION", explanationTextView.text.toString()) // Put explanation text as extra
         }
         startActivity(intent) // Start the quiz activity
     }

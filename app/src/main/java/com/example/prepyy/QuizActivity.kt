@@ -72,6 +72,7 @@ class QuizActivity : AppCompatActivity() { // Quiz activity class inheriting fro
             val correctAnswer = questionObject.getInt("correctAnswer") // Get the correct answer index
 
             questionTextView.text = question // Set the question text view
+            questionTextView.setTextColor(android.graphics.Color.WHITE)
             for (i in optionButtons.indices) { // Iterate over the option buttons
                 optionButtons[i].text = options.getString(i) // Set the text for each option button
                 optionButtons[i].isEnabled = true // Enable the option button

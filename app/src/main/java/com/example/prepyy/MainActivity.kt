@@ -19,6 +19,7 @@ import com.airbnb.lottie.LottieAnimationView
 import com.google.ai.client.generativeai.GenerativeModel // Importing AI libraries
 import com.google.ai.client.generativeai.type.Content
 import com.google.ai.client.generativeai.type.content
+import com.itextpdf.kernel.colors.Color
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfReader
 import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor
@@ -151,6 +152,8 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
 
                 val response = geminiModel.generateContent(maincontent) // Generate content using Gemini model
                 explanationTextView.text = response.text?.toString() ?: "No explanation available" // Set the explanation text view with the response
+                explanationTextView.setTextColor(android.graphics.Color.WHITE) // Set the text color to white
+
                 takeQuizButton.visibility = View.VISIBLE // Make the take quiz button visible
                 pdfContent = input.toString() // Store the content for quiz generation
             } catch (e: Exception) { // Handle exceptions

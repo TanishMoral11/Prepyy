@@ -11,6 +11,7 @@ import android.util.Log
 import android.graphics.Color
 import android.view.ViewGroup
 import android.graphics.drawable.ColorDrawable
+import android.view.Gravity
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
@@ -88,13 +89,21 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
         uploadAnimation.visibility = if (show) View.VISIBLE else View.GONE
     }
     private fun showLoadingDialog() {
-        val builder = AlertDialog.Builder(this, R.style.FullScreenDialog)
+        val builder = AlertDialog.Builder(this, R.style.CenterDialogTheme)
         val dialogView = layoutInflater.inflate(R.layout.dialog_loading, null)
         builder.setView(dialogView)
         builder.setCancelable(false)
         loadingDialog = builder.create()
-        loadingDialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-        loadingDialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        loadingDialog.window?.apply {
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            setDimAmount(0.5f)  // This will dim the background
+
+            // Set the dialog to appear in the center
+            setGravity(Gravity.CENTER)
+
+            // Set the dialog size to wrap content
+            setLayout(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
         loadingDialog.show()
     }
     private fun dismissLoadingDialog() {

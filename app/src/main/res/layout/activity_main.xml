@@ -86,19 +86,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginBottom="24dp"/>
 
-    <fr.castorflex.android.smoothprogressbar.SmoothProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:indeterminate="true"
-        app:spb_color="@color/accent"
-        app:spb_sections_count="4"
-        app:spb_speed="2.0"
-        app:spb_stroke_width="4dp"
-        app:spb_stroke_separator_length="4dp"
-        app:spb_reversed="false"
-        app:spb_mirror_mode="false"
-        app:layout_constraintTop_toBottomOf="@id/appBarLayout"
-        android:visibility="gone"/>
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

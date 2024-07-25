@@ -33,7 +33,6 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONException
 import java.io.IOException
-import fr.castorflex.android.smoothprogressbar.SmoothProgressBar
 
 class MainActivity : AppCompatActivity() { // Main activity class inheriting from AppCompatActivity
 
@@ -41,7 +40,6 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
     private lateinit var explanationTextView: TextView
     private lateinit var takeQuizButton: Button
     private lateinit var uploadAnimation: LottieAnimationView
-    private lateinit var progressBar: SmoothProgressBar
 
     private val apiKey = "AIzaSyAaiqzhC6z-HfLrw0LU7108pbp8OVb_Hw4" // API key for Gemini
     private val geminiModel = GenerativeModel(modelName = "gemini-1.5-pro", apiKey = apiKey) // Initializing the GenerativeModel
@@ -65,7 +63,6 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
         explanationTextView = findViewById(R.id.explanationTextView)
         takeQuizButton = findViewById(R.id.takeQuizButton)
         uploadAnimation = findViewById(R.id.uploadAnimation)
-        progressBar = findViewById(R.id.progressBar)
 
         uploadButton.setOnClickListener { // Set click listener for upload button
             openFilePicker() // Open file picker when button is clicked
@@ -85,7 +82,7 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
     }
 
     private fun showLoading(show: Boolean) {
-        progressBar.visibility = if (show) View.VISIBLE else View.GONE
+//        progressBar.visibility = if (show) View.VISIBLE else View.GONE
         uploadAnimation.visibility = if (show) View.VISIBLE else View.GONE
     }
     private fun showLoadingDialog() {
@@ -152,45 +149,71 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
         }
     }
 
-    private fun processImage(uri: Uri) { // Method to process image
+    private fun processImage(uri: Uri) {
         try {
-            contentResolver.openInputStream(uri)?.use { inputStream -> // Open input stream for the file
-                val bitmap = BitmapFactory.decodeStream(inputStream) // Decode input stream to bitmap
-                analyzeWithGemini(bitmap) // Analyze the bitmap with Gemini
+            contentResolver.openInputStream(uri)?.use { inputStream ->
+                val bitmap = BitmapFactory.decodeStream(inputStream)
+                if (bitmap != null) {
+                    analyzeWithGemini(bitmap)
+                } else {
+                    Log.e("ImageProcessing", "Failed to decode bitmap")
+                    explanationTextView.text = "Error: Unable to process the image"
+                }
+            } ?: run {
+                Log.e("ImageProcessing", "Failed to open input stream")
+                explanationTextView.text = "Error: Unable to open the image file"
             }
-        } catch (e: IOException) { // Handle exceptions
-            explanationTextView.text = "Error processing image: ${e.message}" // Show error message
+        } catch (e: IOException) {
+            Log.e("ImageProcessing", "Error processing image", e)
+            explanationTextView.text = "Error processing image: ${e.message}"
+        } catch (e: Exception) {
+            Log.e("ImageProcessing", "Unexpected error", e)
+            explanationTextView.text = "Unexpected error: ${e.message}"
         }
     }
 
-    private fun analyzeWithGemini(input: Any) { // Method to analyze content with Gemini
+    private fun analyzeWithGemini(input: Any) {
         showLoading(true)
-        CoroutineScope(Dispatchers.Main).launch { // Launch a coroutine on the main thread
+        CoroutineScope(Dispatchers.Main).launch {
             try {
-                maincontent = when (input) { // Create content based on input type
-                    is String -> content { // If input is String, create text content
+                maincontent = when (input) {
+                    is String -> content {
                         text("Explain the following content in short and very easy way like 14 year old kid:\n\n$input")
                     }
-                    is Bitmap -> content { // If input is Bitmap, create image content
+                    is Bitmap -> content {
                         image(input)
                         text("Explain the content of this image in short and very easy way like 14 year old kid:")
                     }
-                    else -> throw IllegalArgumentException("Unsupported input type") // Throw exception if input type is unsupported
+                    else -> throw IllegalArgumentException("Unsupported input type")
                 }
 
-                val response = geminiModel.generateContent(maincontent) // Generate content using Gemini model
-                explanationTextView.text = response.text?.toString() ?: "No explanation available" // Set the explanation text view with the response
-                explanationTextView.setTextColor(android.graphics.Color.WHITE) // Set the text color to white
-
-                takeQuizButton.visibility = View.VISIBLE // Make the take quiz button visible
-                pdfContent = input.toString() // Store the content for quiz generation
-            } catch (e: Exception) { // Handle exceptions
-                explanationTextView.text = "Error analyzing content: ${e.message}" // Show error message
-                takeQuizButton.visibility = View.GONE // Hide the take quiz button
+                val response = geminiModel.generateContent(maincontent)
+                if (response.text != null) {
+                    explanationTextView.text = response.text.toString()
+                    explanationTextView.setTextColor(android.graphics.Color.WHITE)
+                    takeQuizButton.visibility = View.VISIBLE
+                    pdfContent = input.toString()
+                } else {
+                    Log.e("Gemini", "Empty response from API")
+                    explanationTextView.text = "Error: No response from AI model"
+                }
+            } catch (e: Exception) {
+                Log.e("Gemini", "Error analyzing content", e)
+                explanationTextView.text = "Error analyzing content: ${e.message}"
+                takeQuizButton.visibility = View.GONE
             } finally {
                 showLoading(false)
             }
         }
+    }
+    private fun resizeBitmapIfNeeded(bitmap: Bitmap, maxWidth: Int = 1024, maxHeight: Int = 1024): Bitmap {
+        if (bitmap.width <= maxWidth && bitmap.height <= maxHeight) return bitmap
+
+        val ratio = Math.min(maxWidth.toFloat() / bitmap.width, maxHeight.toFloat() / bitmap.height)
+        val width = (bitmap.width * ratio).toInt()
+        val height = (bitmap.height * ratio).toInt()
+
+        return Bitmap.createScaledBitmap(bitmap, width, height, true)
     }
 
     private fun generateQuizAndNavigate() {

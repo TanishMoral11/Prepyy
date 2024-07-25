@@ -8,6 +8,9 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.graphics.Color
+import android.view.ViewGroup
+import android.graphics.drawable.ColorDrawable
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
@@ -20,7 +23,6 @@ import com.airbnb.lottie.LottieAnimationView
 import com.google.ai.client.generativeai.GenerativeModel // Importing AI libraries
 import com.google.ai.client.generativeai.type.Content
 import com.google.ai.client.generativeai.type.content
-import com.itextpdf.kernel.colors.Color
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfReader
 import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor
@@ -86,11 +88,13 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
         uploadAnimation.visibility = if (show) View.VISIBLE else View.GONE
     }
     private fun showLoadingDialog() {
-        val builder = AlertDialog.Builder(this)
+        val builder = AlertDialog.Builder(this, R.style.FullScreenDialog)
         val dialogView = layoutInflater.inflate(R.layout.dialog_loading, null)
         builder.setView(dialogView)
         builder.setCancelable(false)
         loadingDialog = builder.create()
+        loadingDialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        loadingDialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         loadingDialog.show()
     }
     private fun dismissLoadingDialog() {

@@ -49,13 +49,14 @@ dependencies {
     implementation ("com.github.bumptech.glide:glide:4.12.0")
     annotationProcessor ("com.github.bumptech.glide:compiler:4.12.0")
     implementation ("com.google.ai.client.generativeai:generativeai:0.1.1")
-    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation ("com.itextpdf:itext7-core:7.1.16")
     implementation ("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation ("com.google.code.gson:gson:2.8.8")
     implementation ("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.0")
     implementation ("com.airbnb.android:lottie:6.1.0")
     implementation ("com.github.castorflex.smoothprogressbar:library:1.1.0")
+    implementation ("androidx.cardview:cardview:1.0.0")
 
 
 }

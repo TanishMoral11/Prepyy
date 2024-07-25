@@ -1,6 +1,7 @@
 package com.example.prepyy // Package declaration for the application
 
 import android.app.Activity // Importing necessary Android libraries
+import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -44,6 +45,7 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
     private var pdfContent: String = "" // Variable to store PDF content
     private var isGeneratingQuiz = false // Flag to check if quiz is being generated
     private lateinit var maincontent: Content // Variable to hold content to be analyzed
+    private lateinit var loadingDialog: AlertDialog // Variable to hold loading dialog
 
     private val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result -> // Handling file picking result
         if (result.resultCode == Activity.RESULT_OK) { // Check if result is OK
@@ -82,6 +84,19 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
     private fun showLoading(show: Boolean) {
         progressBar.visibility = if (show) View.VISIBLE else View.GONE
         uploadAnimation.visibility = if (show) View.VISIBLE else View.GONE
+    }
+    private fun showLoadingDialog() {
+        val builder = AlertDialog.Builder(this)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_loading, null)
+        builder.setView(dialogView)
+        builder.setCancelable(false)
+        loadingDialog = builder.create()
+        loadingDialog.show()
+    }
+    private fun dismissLoadingDialog() {
+        if (::loadingDialog.isInitialized && loadingDialog.isShowing) {
+            loadingDialog.dismiss()
+        }
     }
 
     private fun openFilePicker() { // Method to open file picker
@@ -165,45 +180,48 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
         }
     }
 
-    private fun generateQuizAndNavigate() { // Method to generate quiz and navigate
-        if (isGeneratingQuiz) { // If quiz is already generating
-            Toast.makeText(this, "Please wait, quiz is generating...", Toast.LENGTH_SHORT).show() // Show a toast message
-            return // Return early
+    private fun generateQuizAndNavigate() {
+        if (isGeneratingQuiz) {
+            Toast.makeText(this, "Please wait, quiz is generating...", Toast.LENGTH_SHORT).show()
+            return
         }
 
-        if (!::maincontent.isInitialized) { // If main content is not initialized
-            Toast.makeText(this, "Please analyze a document first", Toast.LENGTH_SHORT).show() // Show a toast message
-            return // Return early
+        if (!::maincontent.isInitialized) {
+            Toast.makeText(this, "Please analyze a document first", Toast.LENGTH_SHORT).show()
+            return
         }
 
-        isGeneratingQuiz = true // Set quiz generation flag
-        takeQuizButton.isEnabled = false // Disable the take quiz button
+        isGeneratingQuiz = true
+        takeQuizButton.isEnabled = false
+        showLoadingDialog() // Show the loading dialog
 
-        CoroutineScope(Dispatchers.Main).launch { // Launch a coroutine on the main thread
+        CoroutineScope(Dispatchers.Main).launch {
             try {
-                Log.d("QuizDebug", "Starting quiz generation") // Log the start of quiz generation
-                val quizPrompt = content { // Create quiz prompt content
+                Log.d("QuizDebug", "Starting quiz generation")
+                val quizPrompt = content {
                     text("Based on the following content, generate 5 multiple-choice questions with 4 options each. Format the response as a JSON array with each question object containing 'question', 'options' (as an array), and 'correctAnswer' (as an index 0-3). Ensure that the correct answer is randomly positioned for each question.\n\nContent: ${explanationTextView.text}")
                 }
 
-                Log.d("QuizDebug", "Sending request to Gemini") // Log the request to Gemini
-                val response = geminiModel.generateContent(quizPrompt) // Generate content using Gemini model
-                val quizJson = response.text?.toString() ?: "" // Get the response as string
+                Log.d("QuizDebug", "Sending request to Gemini")
+                val response = geminiModel.generateContent(quizPrompt)
+                val quizJson = response.text?.toString() ?: ""
 
-                Log.d("QuizDebug", "Received response from Gemini: $quizJson") // Log the received response
+                Log.d("QuizDebug", "Received response from Gemini: $quizJson")
 
-                if (isValidQuizJson(quizJson)) { // Check if the response is a valid quiz JSON
-                    navigateToQuiz(quizJson) // Navigate to quiz activity
-                } else { // If invalid
-                    Log.e("QuizDebug", "Invalid response from API") // Log an error
-                    Toast.makeText(this@MainActivity, "Invalid quiz format received", Toast.LENGTH_SHORT).show() // Show a toast message
+                if (isValidQuizJson(quizJson)) {
+                    dismissLoadingDialog() // Dismiss the loading dialog
+                    navigateToQuiz(quizJson)
+                } else {
+                    Log.e("QuizDebug", "Invalid response from API")
+                    Toast.makeText(this@MainActivity, "Invalid quiz format received", Toast.LENGTH_SHORT).show()
                 }
-            } catch (e: Exception) { // Handle exceptions
-                Log.e("QuizDebug", "Error generating quiz", e) // Log the error
-                Toast.makeText(this@MainActivity, "Error generating quiz", Toast.LENGTH_SHORT).show() // Show a toast message
+            } catch (e: Exception) {
+                Log.e("QuizDebug", "Error generating quiz", e)
+                Toast.makeText(this@MainActivity, "Error generating quiz", Toast.LENGTH_SHORT).show()
             } finally {
-                isGeneratingQuiz = false // Reset quiz generation flag
-                takeQuizButton.isEnabled = true // Enable the take quiz button
+                isGeneratingQuiz = false
+                takeQuizButton.isEnabled = true
+                dismissLoadingDialog() // Ensure the dialog is dismissed in case of an error
             }
         }
     }

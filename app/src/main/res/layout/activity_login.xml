@@ -26,7 +26,8 @@
         app:layout_constraintTop_toBottomOf="@id/ivIllustration"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="24dp"/>
+        android:layout_marginTop="24dp"
+        android:textColor="@android:color/black"/>
 
     <TextView
         android:id="@+id/tvSignInPrompt"
@@ -36,7 +37,8 @@
         app:layout_constraintTop_toBottomOf="@id/tvSignIn"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="8dp"/>
+        android:layout_marginTop="8dp"
+        android:textColor="@android:color/black"/>
 
     <EditText
         android:id="@+id/etEmail"
@@ -49,7 +51,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="24dp"
         android:layout_marginStart="32dp"
-        android:layout_marginEnd="32dp"/>
+        android:layout_marginEnd="32dp"
+        android:textColor="@android:color/black"/>
 
     <EditText
         android:id="@+id/etPassword"
@@ -59,7 +62,8 @@
         app:layout_constraintTop_toBottomOf="@id/etEmail"
         app:layout_constraintStart_toStartOf="@id/etEmail"
         app:layout_constraintEnd_toEndOf="@id/etEmail"
-        android:layout_marginTop="16dp"/>
+        android:layout_marginTop="16dp"
+        android:textColor="@android:color/black"/>
 
     <TextView
         android:id="@+id/tvForgotPassword"
@@ -68,7 +72,8 @@
         android:text="Forgot password?"
         app:layout_constraintTop_toBottomOf="@id/etPassword"
         app:layout_constraintEnd_toEndOf="@id/etPassword"
-        android:layout_marginTop="8dp"/>
+        android:layout_marginTop="8dp"
+        android:textColor="@android:color/black"        />
 
     <Button
         android:id="@+id/btnSignIn"
@@ -84,11 +89,13 @@
         android:id="@+id/tvSocialSignIn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
         android:text="Or sign in using Social Media"
-        app:layout_constraintTop_toBottomOf="@id/btnSignIn"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="24dp"/>
+        app:layout_constraintHorizontal_bias="0.497"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btnSignIn"
+        android:textColor="@android:color/black"/>
 
     <TextView
         android:id="@+id/tvSignUp"
@@ -98,6 +105,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="24dp"/>
+        android:layout_marginBottom="24dp"
+        android:textColor="@android:color/black"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

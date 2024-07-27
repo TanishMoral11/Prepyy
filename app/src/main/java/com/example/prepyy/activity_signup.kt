@@ -9,6 +9,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthException
 
 class SignupActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
@@ -58,7 +59,7 @@ class SignupActivity : AppCompatActivity() {
         }
 
         tvSignIn.setOnClickListener {
-            finish() // This will return to the LoginActivity if it's in the back stack
+            finish()
         }
     }
 
@@ -66,12 +67,11 @@ class SignupActivity : AppCompatActivity() {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-                    // Sign up success, update UI with the signed-in user's information
                     startActivity(Intent(this, MainActivity::class.java))
                     finish()
                 } else {
-                    // If sign up fails, display a message to the user.
-                    Toast.makeText(baseContext, "Authentication failed: ${task.exception?.message}",
+                    val errorCode = (task.exception as? FirebaseAuthException)?.errorCode ?: "unknown error"
+                    Toast.makeText(baseContext, "Authentication failed: ${task.exception?.message} (Error Code: $errorCode)",
                         Toast.LENGTH_SHORT).show()
                 }
             }

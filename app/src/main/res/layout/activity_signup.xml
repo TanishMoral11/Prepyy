@@ -53,7 +53,8 @@
         android:layout_marginTop="24dp"
         android:layout_marginStart="32dp"
         android:layout_marginEnd="32dp"
-        android:textColor="@android:color/black"/>
+        android:textColor="@android:color/black"
+        android:textColorHint="@android:color/black"/>
 
     <EditText
         android:id="@+id/etEmail"
@@ -65,7 +66,8 @@
         app:layout_constraintStart_toStartOf="@id/etFullName"
         app:layout_constraintEnd_toEndOf="@id/etFullName"
         android:layout_marginTop="16dp"
-        android:textColor="@android:color/black"/>
+        android:textColor="@android:color/black"
+        android:textColorHint="@android:color/black"/>
 
     <EditText
         android:id="@+id/etPassword"
@@ -77,7 +79,8 @@
         app:layout_constraintStart_toStartOf="@id/etEmail"
         app:layout_constraintEnd_toEndOf="@id/etEmail"
         android:layout_marginTop="16dp"
-        android:textColor="@android:color/black"/>
+        android:textColor="@android:color/black"
+        android:textColorHint="@android:color/black"/>
 
     <EditText
         android:id="@+id/etConfirmPassword"
@@ -89,7 +92,8 @@
         app:layout_constraintStart_toStartOf="@id/etPassword"
         app:layout_constraintEnd_toEndOf="@id/etPassword"
         android:layout_marginTop="16dp"
-        android:textColor="@android:color/black"/>
+        android:textColor="@android:color/black"
+        android:textColorHint="@android:color/black"/>
 
     <Button
         android:id="@+id/btnSignUp"
@@ -111,7 +115,8 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="24dp"
-        android:textColor="@android:color/black"/>
+        android:textColor="@android:color/black"
+        />
 
     <TextView
         android:id="@+id/tvSignIn"

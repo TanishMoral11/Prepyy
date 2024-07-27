@@ -1,18 +1,18 @@
-package com.example.prepyy // Package declaration for the application
+package com.example.prepyy
 
-import android.app.Activity // Importing necessary Android libraries
+import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import android.graphics.Color
-import android.view.ViewGroup
-import android.graphics.drawable.ColorDrawable
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -21,60 +21,75 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.airbnb.lottie.LottieAnimationView
-import com.google.ai.client.generativeai.GenerativeModel // Importing AI libraries
+import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.Content
 import com.google.ai.client.generativeai.type.content
+import com.google.firebase.auth.FirebaseAuth
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfReader
 import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor
-import kotlinx.coroutines.CoroutineScope // Importing Kotlin Coroutines
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONException
 import java.io.IOException
 
-class MainActivity : AppCompatActivity() { // Main activity class inheriting from AppCompatActivity
-
-    private lateinit var uploadButton: Button // Declaration of UI elements
+class MainActivity : AppCompatActivity() {
+    private lateinit var auth: FirebaseAuth
+    private lateinit var uploadButton: Button
     private lateinit var explanationTextView: TextView
     private lateinit var takeQuizButton: Button
     private lateinit var uploadAnimation: LottieAnimationView
 
-    private val apiKey = "AIzaSyAaiqzhC6z-HfLrw0LU7108pbp8OVb_Hw4" // API key for Gemini
-    private val geminiModel = GenerativeModel(modelName = "gemini-1.5-pro", apiKey = apiKey) // Initializing the GenerativeModel
-    private var pdfContent: String = "" // Variable to store PDF content
-    private var isGeneratingQuiz = false // Flag to check if quiz is being generated
-    private lateinit var maincontent: Content // Variable to hold content to be analyzed
-    private lateinit var loadingDialog: AlertDialog // Variable to hold loading dialog
+    private val apiKey = "AIzaSyAaiqzhC6z-HfLrw0LU7108pbp8OVb_Hw4"
+    private val geminiModel = GenerativeModel(modelName = "gemini-1.5-pro", apiKey = apiKey)
+    private var pdfContent: String = ""
+    private var isGeneratingQuiz = false
+    private lateinit var maincontent: Content
+    private lateinit var loadingDialog: AlertDialog
 
-    private val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result -> // Handling file picking result
-        if (result.resultCode == Activity.RESULT_OK) { // Check if result is OK
-            val uri: Uri? = result.data?.data // Get the URI of the selected file
-            uri?.let { processFile(it) } // Process the file if URI is not null
+    private val getContent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val uri: Uri? = result.data?.data
+            uri?.let { processFile(it) }
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) { // Override onCreate method
-        super.onCreate(savedInstanceState) // Call superclass implementation
-        setContentView(R.layout.activity_main) // Set the content view to activity_main layout
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-        uploadButton = findViewById(R.id.uploadButton) // Initialize UI elements
+        auth = FirebaseAuth.getInstance()
+
+        if (auth.currentUser == null) {
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+            return
+        }
+
+        setContentView(R.layout.activity_main)
+
+        initializeViews()
+        setupClickListeners()
+        setupWindowInsets()
+    }
+
+    private fun initializeViews() {
+        uploadButton = findViewById(R.id.uploadButton)
         explanationTextView = findViewById(R.id.explanationTextView)
         takeQuizButton = findViewById(R.id.takeQuizButton)
         uploadAnimation = findViewById(R.id.uploadAnimation)
+        takeQuizButton.visibility = View.GONE
+    }
 
-        uploadButton.setOnClickListener { // Set click listener for upload button
-            openFilePicker() // Open file picker when button is clicked
-        }
+    private fun setupClickListeners() {
+        uploadButton.setOnClickListener { openFilePicker() }
+        takeQuizButton.setOnClickListener { generateQuizAndNavigate() }
+    }
 
-        takeQuizButton.setOnClickListener { // Set click listener for take quiz button
-            generateQuizAndNavigate() // Generate quiz and navigate when button is clicked
-        }
-
-        takeQuizButton.visibility = View.GONE // Hide the take quiz button initially
-
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets -> // Adjust window insets for proper layout
+    private fun setupWindowInsets() {
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
@@ -82,9 +97,9 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
     }
 
     private fun showLoading(show: Boolean) {
-//        progressBar.visibility = if (show) View.VISIBLE else View.GONE
         uploadAnimation.visibility = if (show) View.VISIBLE else View.GONE
     }
+
     private fun showLoadingDialog() {
         val builder = AlertDialog.Builder(this, R.style.CenterDialogTheme)
         val dialogView = layoutInflater.inflate(R.layout.dialog_loading, null)
@@ -93,59 +108,56 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
         loadingDialog = builder.create()
         loadingDialog.window?.apply {
             setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            setDimAmount(0.5f)  // This will dim the background
-
-            // Set the dialog to appear in the center
+            setDimAmount(0.5f)
             setGravity(Gravity.CENTER)
-
-            // Set the dialog size to wrap content
             setLayout(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         }
         loadingDialog.show()
     }
+
     private fun dismissLoadingDialog() {
         if (::loadingDialog.isInitialized && loadingDialog.isShowing) {
             loadingDialog.dismiss()
         }
     }
 
-    private fun openFilePicker() { // Method to open file picker
-        val intent = Intent(Intent.ACTION_GET_CONTENT).apply { // Create an intent for picking content
-            type = "*/*" // Set type to all files
-            putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/pdf", "image/jpeg", "image/png")) // Allow only specific file types
+    private fun openFilePicker() {
+        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+            type = "*/*"
+            putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/pdf", "image/jpeg", "image/png"))
         }
-        getContent.launch(intent) // Launch the file picker activity
+        getContent.launch(intent)
     }
 
-    private fun processFile(uri: Uri) { // Method to process the selected file
-        pdfContent = "" // Clear previous content
-        explanationTextView.text = "" // Clear explanation text view
-        takeQuizButton.visibility = View.GONE // Hide take quiz button
-        isGeneratingQuiz = false // Reset quiz generation flag
+    private fun processFile(uri: Uri) {
+        pdfContent = ""
+        explanationTextView.text = ""
+        takeQuizButton.visibility = View.GONE
+        isGeneratingQuiz = false
 
-        val mimeType = contentResolver.getType(uri) // Get the MIME type of the file
-        when { // Check the MIME type and handle accordingly
-            mimeType == "application/pdf" -> extractTextFromPdf(uri) // If PDF, extract text
-            mimeType?.startsWith("image/") == true -> processImage(uri) // If image, process image
-            else -> explanationTextView.text = "Unsupported file type" // If unsupported, show error message
+        val mimeType = contentResolver.getType(uri)
+        when {
+            mimeType == "application/pdf" -> extractTextFromPdf(uri)
+            mimeType?.startsWith("image/") == true -> processImage(uri)
+            else -> explanationTextView.text = "Unsupported file type"
         }
     }
 
-    private fun extractTextFromPdf(uri: Uri) { // Method to extract text from PDF
+    private fun extractTextFromPdf(uri: Uri) {
         try {
-            contentResolver.openInputStream(uri)?.use { inputStream -> // Open input stream for the file
-                val pdfReader = PdfReader(inputStream) // Create PDF reader
-                val pdfDocument = PdfDocument(pdfReader) // Create PDF document
-                val pageNum = pdfDocument.numberOfPages.coerceAtMost(1) // Get text from first page only
-                pdfContent = PdfTextExtractor.getTextFromPage(pdfDocument.getPage(pageNum)) // Extract text from page
-                pdfDocument.close() // Close the document
+            contentResolver.openInputStream(uri)?.use { inputStream ->
+                val pdfReader = PdfReader(inputStream)
+                val pdfDocument = PdfDocument(pdfReader)
+                val pageNum = pdfDocument.numberOfPages.coerceAtMost(1)
+                pdfContent = PdfTextExtractor.getTextFromPage(pdfDocument.getPage(pageNum))
+                pdfDocument.close()
 
-                Log.d("QuizDebug", "PDF Content: $pdfContent") // Log the extracted content
+                Log.d("QuizDebug", "PDF Content: $pdfContent")
 
-                analyzeWithGemini(pdfContent) // Analyze the extracted content with Gemini
+                analyzeWithGemini(pdfContent)
             }
-        } catch (e: IOException) { // Handle exceptions
-            explanationTextView.text = "Error extracting text from PDF: ${e.message}" // Show error message
+        } catch (e: IOException) {
+            explanationTextView.text = "Error extracting text from PDF: ${e.message}"
         }
     }
 
@@ -154,7 +166,8 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
             contentResolver.openInputStream(uri)?.use { inputStream ->
                 val bitmap = BitmapFactory.decodeStream(inputStream)
                 if (bitmap != null) {
-                    analyzeWithGemini(bitmap)
+                    val resizedBitmap = resizeBitmapIfNeeded(bitmap)
+                    analyzeWithGemini(resizedBitmap)
                 } else {
                     Log.e("ImageProcessing", "Failed to decode bitmap")
                     explanationTextView.text = "Error: Unable to process the image"
@@ -163,12 +176,9 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
                 Log.e("ImageProcessing", "Failed to open input stream")
                 explanationTextView.text = "Error: Unable to open the image file"
             }
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             Log.e("ImageProcessing", "Error processing image", e)
             explanationTextView.text = "Error processing image: ${e.message}"
-        } catch (e: Exception) {
-            Log.e("ImageProcessing", "Unexpected error", e)
-            explanationTextView.text = "Unexpected error: ${e.message}"
         }
     }
 
@@ -187,10 +197,12 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
                     else -> throw IllegalArgumentException("Unsupported input type")
                 }
 
-                val response = geminiModel.generateContent(maincontent)
+                val response = withContext(Dispatchers.IO) {
+                    geminiModel.generateContent(maincontent)
+                }
                 if (response.text != null) {
                     explanationTextView.text = response.text.toString()
-                    explanationTextView.setTextColor(android.graphics.Color.WHITE)
+                    explanationTextView.setTextColor(Color.WHITE)
                     takeQuizButton.visibility = View.VISIBLE
                     pdfContent = input.toString()
                 } else {
@@ -206,6 +218,7 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
             }
         }
     }
+
     private fun resizeBitmapIfNeeded(bitmap: Bitmap, maxWidth: Int = 1024, maxHeight: Int = 1024): Bitmap {
         if (bitmap.width <= maxWidth && bitmap.height <= maxHeight) return bitmap
 
@@ -229,7 +242,7 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
 
         isGeneratingQuiz = true
         takeQuizButton.isEnabled = false
-        showLoadingDialog() // Show the loading dialog
+        showLoadingDialog()
 
         CoroutineScope(Dispatchers.Main).launch {
             try {
@@ -237,64 +250,31 @@ class MainActivity : AppCompatActivity() { // Main activity class inheriting fro
                 val quizPrompt = content {
                     text("Based on the following content, generate 5 multiple-choice questions with 4 options each. Format the response as a JSON array with each question object containing 'question', 'options' (as an array), and 'correctAnswer' (as an index 0-3). Ensure that the correct answer is randomly positioned for each question.\n\nContent: ${explanationTextView.text}")
                 }
+                val quizResponse = withContext(Dispatchers.IO) {
+                    geminiModel.generateContent(quizPrompt)
+                }
+                val quizJsonString = quizResponse.text?.toString() ?: throw Exception("No response for quiz generation")
 
-                Log.d("QuizDebug", "Sending request to Gemini")
-                val response = geminiModel.generateContent(quizPrompt)
-                val quizJson = response.text?.toString() ?: ""
+                Log.d("QuizDebug", "Quiz JSON: $quizJsonString")
 
-                Log.d("QuizDebug", "Received response from Gemini: $quizJson")
-
-                if (isValidQuizJson(quizJson)) {
-                    dismissLoadingDialog() // Dismiss the loading dialog
-                    navigateToQuiz(quizJson)
-                } else {
-                    Log.e("QuizDebug", "Invalid response from API")
-                    Toast.makeText(this@MainActivity, "Invalid quiz format received", Toast.LENGTH_SHORT).show()
+                try {
+                    val quizJsonArray = JSONArray(quizJsonString)
+                    val intent = Intent(this@MainActivity, QuizActivity::class.java).apply {
+                        putExtra("quiz_json", quizJsonArray.toString())
+                    }
+                    startActivity(intent)
+                } catch (e: JSONException) {
+                    Log.e("QuizGeneration", "Error parsing quiz JSON", e)
+                    Toast.makeText(this@MainActivity, "Error generating quiz: Invalid format", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                Log.e("QuizDebug", "Error generating quiz", e)
-                Toast.makeText(this@MainActivity, "Error generating quiz", Toast.LENGTH_SHORT).show()
+                Log.e("QuizGeneration", "Error generating quiz", e)
+                Toast.makeText(this@MainActivity, "Error generating quiz: ${e.message}", Toast.LENGTH_SHORT).show()
             } finally {
                 isGeneratingQuiz = false
                 takeQuizButton.isEnabled = true
-                dismissLoadingDialog() // Ensure the dialog is dismissed in case of an error
+                dismissLoadingDialog()
             }
         }
-    }
-
-    private fun isValidQuizJson(json: String): Boolean { // Method to validate quiz JSON
-        return try {
-            val cleanedJson = json.replace("```json", "").replace("```", "").trim() // Clean the JSON string
-            val jsonArray = JSONArray(cleanedJson) // Parse the JSON string to array
-
-            for (i in 0 until jsonArray.length()) { // Loop through the JSON array
-                val jsonObject = jsonArray.getJSONObject(i) // Get JSON object at index
-                jsonObject.getString("question") // Get the question string
-                val optionsArray = jsonObject.getJSONArray("options") // Get the options array
-                if (optionsArray.length() != 4) { // Check if options array length is 4
-                    return false // Return false if not
-                }
-                for (j in 0 until optionsArray.length()) { // Loop through options array
-                    optionsArray.getString(j) // Get option string at index
-                }
-                val correctAnswer = jsonObject.getInt("correctAnswer") // Get the correct answer index
-                if (correctAnswer < 0 || correctAnswer > 3) { // Check if correct answer index is valid
-                    return false // Return false if not
-                }
-            }
-            true // Return true if valid
-        } catch (e: JSONException) { // Handle JSON exceptions
-            Log.e("QuizDebug", "Invalid JSON format", e) // Log the error
-            Log.e("QuizDebug", "Received JSON: $json") // Log the received JSON
-            false // Return false
-        }
-    }
-
-    private fun navigateToQuiz(quizJson: String) { // Method to navigate to quiz activity
-        val intent = Intent(this@MainActivity, QuizActivity::class.java).apply { // Create an intent for QuizActivity
-            putExtra("QUIZ_JSON", quizJson) // Put quiz JSON as extra
-            putExtra("EXPLANATION", explanationTextView.text.toString()) // Put explanation text as extra
-        }
-        startActivity(intent) // Start the quiz activity
     }
 }

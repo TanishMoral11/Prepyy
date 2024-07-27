@@ -2,7 +2,9 @@ package com.example.prepyy
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
@@ -41,6 +43,7 @@ import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
+    private lateinit var sharedPreferences: SharedPreferences
     private lateinit var uploadButton: Button
     private lateinit var explanationTextView: TextView
     private lateinit var takeQuizButton: Button
@@ -65,8 +68,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         auth = FirebaseAuth.getInstance()
+        sharedPreferences = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE)
 
-        if (auth.currentUser == null) {
+        if (!isLoggedIn()) {
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
             return
@@ -109,6 +113,7 @@ class MainActivity : AppCompatActivity() {
             when (menuItem.itemId) {
                 0 -> {
                     auth.signOut()
+                    setLoggedIn(false)
                     Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show()
                     startActivity(Intent(this, LoginActivity::class.java))
                     finish()
@@ -118,6 +123,17 @@ class MainActivity : AppCompatActivity() {
             }
         }
         popupMenu.show()
+    }
+
+    private fun isLoggedIn(): Boolean {
+        return sharedPreferences.getBoolean("logged_in", false)
+    }
+
+    private fun setLoggedIn(loggedIn: Boolean) {
+        with(sharedPreferences.edit()) {
+            putBoolean("logged_in", loggedIn)
+            apply()
+        }
     }
 
     private fun showLoading(show: Boolean) {

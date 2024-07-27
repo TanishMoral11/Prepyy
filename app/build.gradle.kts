@@ -46,6 +46,8 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.firebase.auth)
     implementation(libs.androidx.runtime.android)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.runtime.livedata)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -60,6 +62,7 @@ dependencies {
     implementation ("com.airbnb.android:lottie:6.1.0")
     implementation ("com.github.castorflex.smoothprogressbar:library:1.1.0")
     implementation ("androidx.cardview:cardview:1.0.0")
+
 
 
 }

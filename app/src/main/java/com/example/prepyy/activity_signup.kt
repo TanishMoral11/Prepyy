@@ -1,20 +1,79 @@
 package com.example.prepyy
 
+import android.content.Intent
 import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import com.google.firebase.auth.FirebaseAuth
 
-class activity_signup : AppCompatActivity() {
+class SignupActivity : AppCompatActivity() {
+    private lateinit var auth: FirebaseAuth
+    private lateinit var ivIllustration: ImageView
+    private lateinit var tvSignUp: TextView
+    private lateinit var tvSignUpPrompt: TextView
+    private lateinit var etFullName: EditText
+    private lateinit var etEmail: EditText
+    private lateinit var etPassword: EditText
+    private lateinit var etConfirmPassword: EditText
+    private lateinit var btnSignUp: Button
+    private lateinit var tvSocialSignUp: TextView
+    private lateinit var tvSignIn: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_signup)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+
+        auth = FirebaseAuth.getInstance()
+
+        ivIllustration = findViewById(R.id.ivIllustration)
+        tvSignUp = findViewById(R.id.tvSignUp)
+        tvSignUpPrompt = findViewById(R.id.tvSignUpPrompt)
+        etFullName = findViewById(R.id.etFullName)
+        etEmail = findViewById(R.id.etEmail)
+        etPassword = findViewById(R.id.etPassword)
+        etConfirmPassword = findViewById(R.id.etConfirmPassword)
+        btnSignUp = findViewById(R.id.btnSignUp)
+        tvSocialSignUp = findViewById(R.id.tvSocialSignUp)
+        tvSignIn = findViewById(R.id.tvSignIn)
+
+        btnSignUp.setOnClickListener {
+            val fullName = etFullName.text.toString().trim()
+            val email = etEmail.text.toString().trim()
+            val password = etPassword.text.toString().trim()
+            val confirmPassword = etConfirmPassword.text.toString().trim()
+
+            if (fullName.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty() && confirmPassword.isNotEmpty()) {
+                if (password == confirmPassword) {
+                    signUp(email, password)
+                } else {
+                    Toast.makeText(this, "Passwords do not match", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
+            }
         }
+
+        tvSignIn.setOnClickListener {
+            finish() // This will return to the LoginActivity if it's in the back stack
+        }
+    }
+
+    private fun signUp(email: String, password: String) {
+        auth.createUserWithEmailAndPassword(email, password)
+            .addOnCompleteListener(this) { task ->
+                if (task.isSuccessful) {
+                    // Sign up success, update UI with the signed-in user's information
+                    startActivity(Intent(this, MainActivity::class.java))
+                    finish()
+                } else {
+                    // If sign up fails, display a message to the user.
+                    Toast.makeText(baseContext, "Authentication failed: ${task.exception?.message}",
+                        Toast.LENGTH_SHORT).show()
+                }
+            }
     }
 }

@@ -11,9 +11,12 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ImageView
+import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -42,6 +45,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var explanationTextView: TextView
     private lateinit var takeQuizButton: Button
     private lateinit var uploadAnimation: LottieAnimationView
+    private lateinit var profileIcon: ImageView
 
     private val apiKey = "AIzaSyAaiqzhC6z-HfLrw0LU7108pbp8OVb_Hw4"
     private val geminiModel = GenerativeModel(modelName = "gemini-1.5-pro", apiKey = apiKey)
@@ -80,12 +84,14 @@ class MainActivity : AppCompatActivity() {
         explanationTextView = findViewById(R.id.explanationTextView)
         takeQuizButton = findViewById(R.id.takeQuizButton)
         uploadAnimation = findViewById(R.id.uploadAnimation)
+        profileIcon = findViewById(R.id.profileIcon)
         takeQuizButton.visibility = View.GONE
     }
 
     private fun setupClickListeners() {
         uploadButton.setOnClickListener { openFilePicker() }
         takeQuizButton.setOnClickListener { generateQuizAndNavigate() }
+        profileIcon.setOnClickListener { showLogoutMenu(it) }
     }
 
     private fun setupWindowInsets() {
@@ -94,6 +100,24 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+    }
+
+    private fun showLogoutMenu(view: View) {
+        val popupMenu = PopupMenu(this, view)
+        popupMenu.menu.add(0, 0, 0, "Logout")
+        popupMenu.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                0 -> {
+                    auth.signOut()
+                    Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show()
+                    startActivity(Intent(this, LoginActivity::class.java))
+                    finish()
+                    true
+                }
+                else -> false
+            }
+        }
+        popupMenu.show()
     }
 
     private fun showLoading(show: Boolean) {

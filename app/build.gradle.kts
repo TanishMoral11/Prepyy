@@ -43,7 +43,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.4.7"
+        kotlinCompilerExtensionVersion = libs.versions.compose.get()
     }
 }
 
@@ -57,6 +57,9 @@ dependencies {
     implementation(libs.androidx.runtime.android)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.runtime.livedata)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.compose.runtime)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -88,12 +91,4 @@ dependencies {
 
     // CardView
     implementation("androidx.cardview:cardview:1.0.0")
-
-    // Lifecycle and Compose
-    def lifecycle_version = "2.6.1"
-    def compose_version = "1.4.3"
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycle_version")
-    implementation("androidx.compose.runtime:runtime-livedata:$compose_version")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:$lifecycle_version")
-    implementation("androidx.compose.runtime:runtime:$compose_version")
 }

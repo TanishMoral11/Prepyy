@@ -2,9 +2,7 @@ package com.example.prepyy
 
 import android.app.Activity
 import android.app.AlertDialog
-import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
@@ -13,12 +11,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
-import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.ImageView
-import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,26 +24,22 @@ import com.airbnb.lottie.LottieAnimationView
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.Content
 import com.google.ai.client.generativeai.type.content
-import com.google.firebase.auth.FirebaseAuth
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfReader
 import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONException
 import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var auth: FirebaseAuth
-    private lateinit var sharedPreferences: SharedPreferences
+
     private lateinit var uploadButton: Button
     private lateinit var explanationTextView: TextView
     private lateinit var takeQuizButton: Button
     private lateinit var uploadAnimation: LottieAnimationView
-    private lateinit var profileIcon: ImageView
 
     private val apiKey = "AIzaSyAaiqzhC6z-HfLrw0LU7108pbp8OVb_Hw4"
     private val geminiModel = GenerativeModel(modelName = "gemini-1.5-pro", apiKey = apiKey)
@@ -66,73 +57,27 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        auth = FirebaseAuth.getInstance()
-        sharedPreferences = getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE)
-
-        if (!isLoggedIn()) {
-            startActivity(Intent(this, LoginActivity::class.java))
-            finish()
-            return
-        }
-
         setContentView(R.layout.activity_main)
 
-        initializeViews()
-        setupClickListeners()
-        setupWindowInsets()
-    }
-
-    private fun initializeViews() {
         uploadButton = findViewById(R.id.uploadButton)
         explanationTextView = findViewById(R.id.explanationTextView)
         takeQuizButton = findViewById(R.id.takeQuizButton)
         uploadAnimation = findViewById(R.id.uploadAnimation)
-        profileIcon = findViewById(R.id.profileIcon)
+
+        uploadButton.setOnClickListener {
+            openFilePicker()
+        }
+
+        takeQuizButton.setOnClickListener {
+            generateQuizAndNavigate()
+        }
+
         takeQuizButton.visibility = View.GONE
-    }
 
-    private fun setupClickListeners() {
-        uploadButton.setOnClickListener { openFilePicker() }
-        takeQuizButton.setOnClickListener { generateQuizAndNavigate() }
-        profileIcon.setOnClickListener { showLogoutMenu(it) }
-    }
-
-    private fun setupWindowInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
-        }
-    }
-
-    private fun showLogoutMenu(view: View) {
-        val popupMenu = PopupMenu(this, view)
-        popupMenu.menu.add(0, 0, 0, "Logout")
-        popupMenu.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                0 -> {
-                    auth.signOut()
-                    setLoggedIn(false)
-                    Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show()
-                    startActivity(Intent(this, LoginActivity::class.java))
-                    finish()
-                    true
-                }
-                else -> false
-            }
-        }
-        popupMenu.show()
-    }
-
-    private fun isLoggedIn(): Boolean {
-        return sharedPreferences.getBoolean("logged_in", false)
-    }
-
-    private fun setLoggedIn(loggedIn: Boolean) {
-        with(sharedPreferences.edit()) {
-            putBoolean("logged_in", loggedIn)
-            apply()
         }
     }
 
@@ -206,8 +151,7 @@ class MainActivity : AppCompatActivity() {
             contentResolver.openInputStream(uri)?.use { inputStream ->
                 val bitmap = BitmapFactory.decodeStream(inputStream)
                 if (bitmap != null) {
-                    val resizedBitmap = resizeBitmapIfNeeded(bitmap)
-                    analyzeWithGemini(resizedBitmap)
+                    analyzeWithGemini(bitmap)
                 } else {
                     Log.e("ImageProcessing", "Failed to decode bitmap")
                     explanationTextView.text = "Error: Unable to process the image"
@@ -216,9 +160,12 @@ class MainActivity : AppCompatActivity() {
                 Log.e("ImageProcessing", "Failed to open input stream")
                 explanationTextView.text = "Error: Unable to open the image file"
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
             Log.e("ImageProcessing", "Error processing image", e)
             explanationTextView.text = "Error processing image: ${e.message}"
+        } catch (e: Exception) {
+            Log.e("ImageProcessing", "Unexpected error", e)
+            explanationTextView.text = "Unexpected error: ${e.message}"
         }
     }
 
@@ -237,12 +184,10 @@ class MainActivity : AppCompatActivity() {
                     else -> throw IllegalArgumentException("Unsupported input type")
                 }
 
-                val response = withContext(Dispatchers.IO) {
-                    geminiModel.generateContent(maincontent)
-                }
+                val response = geminiModel.generateContent(maincontent)
                 if (response.text != null) {
                     explanationTextView.text = response.text.toString()
-                    explanationTextView.setTextColor(Color.WHITE)
+                    explanationTextView.setTextColor(android.graphics.Color.WHITE)
                     takeQuizButton.visibility = View.VISIBLE
                     pdfContent = input.toString()
                 } else {
@@ -290,31 +235,64 @@ class MainActivity : AppCompatActivity() {
                 val quizPrompt = content {
                     text("Based on the following content, generate 5 multiple-choice questions with 4 options each. Format the response as a JSON array with each question object containing 'question', 'options' (as an array), and 'correctAnswer' (as an index 0-3). Ensure that the correct answer is randomly positioned for each question.\n\nContent: ${explanationTextView.text}")
                 }
-                val quizResponse = withContext(Dispatchers.IO) {
-                    geminiModel.generateContent(quizPrompt)
-                }
-                val quizJsonString = quizResponse.text?.toString() ?: throw Exception("No response for quiz generation")
 
-                Log.d("QuizDebug", "Quiz JSON: $quizJsonString")
+                Log.d("QuizDebug", "Sending request to Gemini")
+                val response = geminiModel.generateContent(quizPrompt)
+                val quizJson = response.text?.toString() ?: ""
 
-                try {
-                    val quizJsonArray = JSONArray(quizJsonString)
-                    val intent = Intent(this@MainActivity, QuizActivity::class.java).apply {
-                        putExtra("quiz_json", quizJsonArray.toString())
-                    }
-                    startActivity(intent)
-                } catch (e: JSONException) {
-                    Log.e("QuizGeneration", "Error parsing quiz JSON", e)
-                    Toast.makeText(this@MainActivity, "Error generating quiz: Invalid format", Toast.LENGTH_SHORT).show()
+                Log.d("QuizDebug", "Received response from Gemini: $quizJson")
+
+                if (isValidQuizJson(quizJson)) {
+                    dismissLoadingDialog()
+                    navigateToQuiz(quizJson)
+                } else {
+                    Log.e("QuizDebug", "Invalid response from API")
+                    Toast.makeText(this@MainActivity, "Invalid quiz format received", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                Log.e("QuizGeneration", "Error generating quiz", e)
-                Toast.makeText(this@MainActivity, "Error generating quiz: ${e.message}", Toast.LENGTH_SHORT).show()
+                Log.e("QuizDebug", "Error generating quiz", e)
+                Toast.makeText(this@MainActivity, "Error generating quiz", Toast.LENGTH_SHORT).show()
             } finally {
                 isGeneratingQuiz = false
                 takeQuizButton.isEnabled = true
                 dismissLoadingDialog()
             }
         }
+    }
+
+    private fun isValidQuizJson(json: String): Boolean {
+        return try {
+            val cleanedJson = json.replace("```json", "").replace("```", "").trim()
+            val jsonArray = JSONArray(cleanedJson)
+
+            for (i in 0 until jsonArray.length()) {
+                val jsonObject = jsonArray.getJSONObject(i)
+                jsonObject.getString("question")
+                val optionsArray = jsonObject.getJSONArray("options")
+                if (optionsArray.length() != 4) {
+                    return false
+                }
+                for (j in 0 until optionsArray.length()) {
+                    optionsArray.getString(j)
+                }
+                val correctAnswer = jsonObject.getInt("correctAnswer")
+                if (correctAnswer < 0 || correctAnswer > 3) {
+                    return false
+                }
+            }
+            true
+        } catch (e: JSONException) {
+            Log.e("QuizDebug", "Invalid JSON format", e)
+            Log.e("QuizDebug", "Received JSON: $json")
+            false
+        }
+    }
+
+    private fun navigateToQuiz(quizJson: String) {
+        val intent = Intent(this@MainActivity, QuizActivity::class.java).apply {
+            putExtra("QUIZ_JSON", quizJson)
+            putExtra("EXPLANATION", explanationTextView.text.toString())
+        }
+        startActivity(intent)
     }
 }

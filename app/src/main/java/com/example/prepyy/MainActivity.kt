@@ -223,7 +223,7 @@ class MainActivity : AppCompatActivity() {
                 val response = geminiModel.generateContent(maincontent)
                 if (response.text != null) {
                     explanationTextView.text = response.text.toString()
-                    explanationTextView.setTextColor(android.graphics.Color.WHITE)
+                    explanationTextView.setTextColor(android.graphics.Color.BLACK)
                     takeQuizButton.visibility = View.VISIBLE
                     pdfContent = input.toString()
                 } else {

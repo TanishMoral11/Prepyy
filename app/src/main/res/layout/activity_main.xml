@@ -6,7 +6,8 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    android:background="@color/background">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
@@ -18,9 +19,9 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
             app:title="Prepyy"
-            app:titleTextColor="@android:color/white">
+            android:background="#80FFFFFF"
+            app:titleTextColor="@color/text_primary">
 
             <ImageView
                 android:id="@+id/profileIcon"
@@ -69,14 +70,17 @@
         app:layout_constraintTop_toBottomOf="@id/uploadAnimation"
         app:layout_constraintBottom_toTopOf="@id/takeQuizButton"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:cardBackgroundColor="@color/creamy">
 
         <TextView
             android:id="@+id/explanationTextView"
             style="@style/AppTextView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:scrollbars="vertical" />
+            android:scrollbars="vertical"
+            android:textSize="20sp"
+            android:textColor="@color/text_primary"/>
 
     </com.google.android.material.card.MaterialCardView>
 

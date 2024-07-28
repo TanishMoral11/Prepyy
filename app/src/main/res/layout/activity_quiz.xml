@@ -5,7 +5,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".QuizActivity">
+    tools:context=".QuizActivity"
+    android:background="@color/background">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
@@ -19,7 +20,7 @@
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
             app:title="Quiz"
-            app:titleTextColor="@android:color/white" />
+            app:titleTextColor="@color/text_primary" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -32,7 +33,8 @@
         app:layout_constraintTop_toBottomOf="@id/appBarLayout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        tools:text="Question goes here?" />
+        tools:text="Question goes here?"
+        android:textColor="@color/black"/>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/optionAButton"
@@ -44,7 +46,10 @@
         app:layout_constraintTop_toBottomOf="@id/questionTextView"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        tools:text="Option A" />
+        tools:text="Option A"
+        android:textColor="@color/black"
+        android:backgroundTint="?attr/colorPrimary"
+        />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/optionBButton"
@@ -56,7 +61,10 @@
         app:layout_constraintTop_toBottomOf="@id/optionAButton"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        tools:text="Option B" />
+        tools:text="Option B"
+        android:textColor="@color/black"
+        android:backgroundTint="?attr/colorPrimary"
+        />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/optionCButton"
@@ -68,7 +76,9 @@
         app:layout_constraintTop_toBottomOf="@id/optionBButton"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        tools:text="Option C" />
+        tools:text="Option C"
+        android:textColor="@color/black"
+        android:backgroundTint="?attr/colorPrimary"/>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/optionDButton"
@@ -80,7 +90,9 @@
         app:layout_constraintTop_toBottomOf="@id/optionCButton"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        tools:text="Option D" />
+        tools:text="Option D"
+        android:textColor="@color/black"
+        android:backgroundTint="?attr/colorPrimary"/>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/nextButton"
@@ -91,6 +103,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="24dp"/>
+        android:layout_marginBottom="24dp"
+        android:textColor="@color/black"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

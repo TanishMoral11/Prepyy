@@ -7,6 +7,7 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import org.json.JSONArray
 import org.json.JSONException
 
@@ -60,6 +61,7 @@ class QuizActivity : AppCompatActivity() { // Quiz activity class inheriting fro
     }
 
     private fun showNextQuestion() { // Method to show the next question
+        resetButtonColors()
         if (currentQuestionIndex >= quizData.length()) { // Check if all questions have been shown
             showQuizResult() // Show the quiz result if all questions are done
             return // Return early
@@ -90,17 +92,29 @@ class QuizActivity : AppCompatActivity() { // Quiz activity class inheriting fro
         }
     }
 
-    private fun checkAnswer(selectedIndex: Int, correctAnswer: Int) { // Method to check the selected answer
-        if (selectedIndex == correctAnswer) { // Check if the selected answer is correct
-            score++ // Increment the score if correct
-            Toast.makeText(this, "Correct!", Toast.LENGTH_SHORT).show() // Show a toast message for correct answer
-        } else { // If the answer is incorrect
-            Toast.makeText(this, "Incorrect. The correct answer was ${optionButtons[correctAnswer].text}", Toast.LENGTH_SHORT).show() // Show a toast message for incorrect answer
+    private fun checkAnswer(selectedIndex: Int, correctAnswer: Int) {
+        val correctColor = ContextCompat.getColorStateList(this, R.color.green)
+        val incorrectColor = ContextCompat.getColorStateList(this, R.color.red)
+
+        if (selectedIndex == correctAnswer) {
+            score++
+            optionButtons[selectedIndex].backgroundTintList = correctColor
+            Toast.makeText(this, "Correct!", Toast.LENGTH_SHORT).show()
+        } else {
+            optionButtons[selectedIndex].backgroundTintList = incorrectColor
+            optionButtons[correctAnswer].backgroundTintList = correctColor
+            Toast.makeText(this, "Incorrect. The correct answer was ${optionButtons[correctAnswer].text}", Toast.LENGTH_SHORT).show()
         }
 
-        optionButtons.forEach { it.isEnabled = false } // Disable all option buttons
-        nextButton.visibility = View.VISIBLE // Show the next button
-        currentQuestionIndex++ // Move to the next question
+        optionButtons.forEach { it.isEnabled = false }
+        nextButton.visibility = View.VISIBLE
+        currentQuestionIndex++
+    }
+    private fun resetButtonColors() {
+        val defaultColor = ContextCompat.getColorStateList(this, R.color.primary_very_light)
+        optionButtons.forEach {
+            it.backgroundTintList = defaultColor
+        }
     }
 
     private fun showQuizResult() { // Method to show the quiz result

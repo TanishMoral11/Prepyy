@@ -18,7 +18,7 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
+            android:background="@color/primary_very_light"
             app:title="Quiz"
             app:titleTextColor="@color/text_primary" />
 
@@ -48,7 +48,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         tools:text="Option A"
         android:textColor="@color/black"
-        android:backgroundTint="?attr/colorPrimary"
+        android:backgroundTint="@color/primary_very_light"
         />
 
     <com.google.android.material.button.MaterialButton
@@ -63,7 +63,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         tools:text="Option B"
         android:textColor="@color/black"
-        android:backgroundTint="?attr/colorPrimary"
+        android:backgroundTint="@color/primary_very_light"
         />
 
     <com.google.android.material.button.MaterialButton
@@ -78,7 +78,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         tools:text="Option C"
         android:textColor="@color/black"
-        android:backgroundTint="?attr/colorPrimary"/>
+        android:backgroundTint="@color/primary_very_light"
+        />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/optionDButton"
@@ -92,7 +93,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         tools:text="Option D"
         android:textColor="@color/black"
-        android:backgroundTint="?attr/colorPrimary"/>
+        android:backgroundTint="@color/primary_very_light"
+        />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/nextButton"
@@ -104,6 +106,8 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginBottom="24dp"
-        android:textColor="@color/black"/>
+        android:textColor="@color/black"
+        android:backgroundTint="@color/primary_very_light"
+        />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

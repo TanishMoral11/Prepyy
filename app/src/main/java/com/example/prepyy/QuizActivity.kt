@@ -1,9 +1,10 @@
-package com.example.prepyy // Package declaration for the application
+package com.example.prepyy
 
-import android.os.Bundle // Importing necessary Android libraries
+import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Button
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -11,21 +12,25 @@ import androidx.core.content.ContextCompat
 import org.json.JSONArray
 import org.json.JSONException
 
-class QuizActivity : AppCompatActivity() { // Quiz activity class inheriting from AppCompatActivity
-    private lateinit var questionTextView: TextView // Declaration of UI elements
+class QuizActivity : AppCompatActivity() {
+    private lateinit var questionTextView: TextView
     private lateinit var optionButtons: List<Button>
     private lateinit var nextButton: Button
+    private lateinit var progressTextView: TextView
+    private lateinit var progressBar: ProgressBar
+    private var totalQuestions: Int = 0
 
+    private var quizData: JSONArray = JSONArray()
+    private var currentQuestionIndex: Int = -1 // Start at -1 so first question is 0
+    private var score: Int = 0
 
-    private var quizData: JSONArray = JSONArray() // Variable to store quiz data
-    private var currentQuestionIndex: Int = 0 // Variable to keep track of the current question index
-    private var score: Int = 0 // Variable to keep track of the user's score
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_quiz)
 
-    override fun onCreate(savedInstanceState: Bundle?) { // Override onCreate method
-        super.onCreate(savedInstanceState) // Call superclass implementation
-        setContentView(R.layout.activity_quiz) // Set the content view to activity_quiz layout
-
-        questionTextView = findViewById(R.id.questionTextView) // Initialize UI elements
+        progressTextView = findViewById(R.id.progressTextView)
+        progressBar = findViewById(R.id.progressBar)
+        questionTextView = findViewById(R.id.questionTextView)
         optionButtons = listOf(
             findViewById(R.id.optionAButton),
             findViewById(R.id.optionBButton),
@@ -34,62 +39,69 @@ class QuizActivity : AppCompatActivity() { // Quiz activity class inheriting fro
         )
         nextButton = findViewById(R.id.nextButton)
 
-        val quizJson = intent.getStringExtra("QUIZ_JSON") ?: "" // Get the quiz JSON from the intent extras
-        val explanation = intent.getStringExtra("EXPLANATION") // Get the explanation from the intent extras (if needed)
+        val quizJson = intent.getStringExtra("QUIZ_JSON") ?: ""
+        val explanation = intent.getStringExtra("EXPLANATION")
 
-        Log.d("QuizDebug", "Received Quiz JSON: $quizJson") // Log the received quiz JSON
+        Log.d("QuizDebug", "Received Quiz JSON: $quizJson")
 
-        if (quizJson.isNotEmpty()) { // Check if quiz JSON is not empty
+        if (quizJson.isNotEmpty()) {
             try {
-                val cleanedJson = quizJson.replace("```json", "").replace("```", "").trim() // Clean the JSON string
-                quizData = JSONArray(cleanedJson) // Parse the cleaned JSON string to a JSONArray
-                currentQuestionIndex = 0 // Initialize the current question index
-                score = 0 // Initialize the score
-                showNextQuestion() // Show the first question
-            } catch (e: JSONException) { // Handle JSON parsing exceptions
-                Log.e("QuizDebug", "Error parsing quiz JSON", e) // Log the error
-                Toast.makeText(this, "Error loading quiz", Toast.LENGTH_SHORT).show() // Show a toast message
-                finish() // Finish the activity
+                val cleanedJson = quizJson.replace("```json", "").replace("```", "").trim()
+                quizData = JSONArray(cleanedJson)
+                totalQuestions = quizData.length()
+                progressBar.max = totalQuestions
+                showNextQuestion()
+            } catch (e: JSONException) {
+                Log.e("QuizDebug", "Error parsing quiz JSON", e)
+                Toast.makeText(this, "Error loading quiz", Toast.LENGTH_SHORT).show()
+                finish()
             }
-        } else { // If quiz JSON is empty
-            Toast.makeText(this, "No quiz data received", Toast.LENGTH_SHORT).show() // Show a toast message
-            finish() // Finish the activity
+        } else {
+            Toast.makeText(this, "No quiz data received", Toast.LENGTH_SHORT).show()
+            finish()
         }
 
-        nextButton.setOnClickListener { // Set click listener for the next button
-            showNextQuestion() // Show the next question when button is clicked
+        nextButton.setOnClickListener {
+            showNextQuestion()
         }
     }
 
-    private fun showNextQuestion() { // Method to show the next question
+    private fun updateProgress() {
+        val currentQuestion = currentQuestionIndex + 1
+        progressTextView.text = "Question $currentQuestion/$totalQuestions"
+        progressBar.progress = currentQuestion
+    }
+
+    private fun showNextQuestion() {
+        currentQuestionIndex++
+        updateProgress()
         resetButtonColors()
-        if (currentQuestionIndex >= quizData.length()) { // Check if all questions have been shown
-            showQuizResult() // Show the quiz result if all questions are done
-            return // Return early
+
+        if (currentQuestionIndex >= quizData.length()) {
+            showQuizResult()
+            return
         }
 
         try {
-            val questionObject = quizData.getJSONObject(currentQuestionIndex) // Get the current question object
-            val question = questionObject.getString("question") // Get the question text
-            val options = questionObject.getJSONArray("options") // Get the options array
-            val correctAnswer = questionObject.getInt("correctAnswer") // Get the correct answer index
+            val questionObject = quizData.getJSONObject(currentQuestionIndex)
+            val question = questionObject.getString("question")
+            val options = questionObject.getJSONArray("options")
+            val correctAnswer = questionObject.getInt("correctAnswer")
 
-            questionTextView.text = question // Set the question text view
-//            questionTextView.setTextColor(android.graphics.Color.BLACK)
-            for (i in optionButtons.indices) { // Iterate over the option buttons
-                optionButtons[i].text = options.getString(i) // Set the text for each option button
-                optionButtons[i].isEnabled = true // Enable the option button
-                optionButtons[i].setOnClickListener { // Set click listener for each option button
-                    checkAnswer(i, correctAnswer) // Check the answer when button is clicked
+            questionTextView.text = question
+            for (i in optionButtons.indices) {
+                optionButtons[i].text = options.getString(i)
+                optionButtons[i].isEnabled = true
+                optionButtons[i].setOnClickListener {
+                    checkAnswer(i, correctAnswer)
                 }
             }
 
-            nextButton.visibility = View.GONE // Hide the next button until an answer is selected
-        } catch (e: JSONException) { // Handle JSON parsing exceptions
-            Log.e("QuizDebug", "Error displaying question", e) // Log the error
-            Toast.makeText(this, "Error displaying question", Toast.LENGTH_SHORT).show() // Show a toast message
-            currentQuestionIndex++ // Move to the next question
-            showNextQuestion() // Show the next question
+            nextButton.visibility = View.GONE
+        } catch (e: JSONException) {
+            Log.e("QuizDebug", "Error displaying question", e)
+            Toast.makeText(this, "Error displaying question", Toast.LENGTH_SHORT).show()
+            showNextQuestion()
         }
     }
 
@@ -109,8 +121,8 @@ class QuizActivity : AppCompatActivity() { // Quiz activity class inheriting fro
 
         optionButtons.forEach { it.isEnabled = false }
         nextButton.visibility = View.VISIBLE
-        currentQuestionIndex++
     }
+
     private fun resetButtonColors() {
         val defaultColor = ContextCompat.getColorStateList(this, R.color.primary_very_light)
         optionButtons.forEach {
@@ -118,12 +130,14 @@ class QuizActivity : AppCompatActivity() { // Quiz activity class inheriting fro
         }
     }
 
-    private fun showQuizResult() { // Method to show the quiz result
-        questionTextView.text = "Quiz complete!" // Set the question text view to indicate quiz completion
-        optionButtons.forEach { it.visibility = View.GONE } // Hide all option buttons
-        nextButton.visibility = View.GONE // Hide the next button
+    private fun showQuizResult() {
+        questionTextView.text = "Quiz complete!"
+        optionButtons.forEach { it.visibility = View.GONE }
+        nextButton.visibility = View.GONE
+        progressBar.visibility = View.GONE
+        progressTextView.visibility = View.GONE
 
-        val resultText = "Your score: $score out of ${quizData.length()}" // Create the result text
-        Toast.makeText(this, resultText, Toast.LENGTH_LONG).show() // Show a toast message with the result
+        val resultText = "Your score: $score out of $totalQuestions"
+        Toast.makeText(this, resultText, Toast.LENGTH_LONG).show()
     }
 }

@@ -16,6 +16,7 @@ class QuizActivity : AppCompatActivity() { // Quiz activity class inheriting fro
     private lateinit var optionButtons: List<Button>
     private lateinit var nextButton: Button
 
+
     private var quizData: JSONArray = JSONArray() // Variable to store quiz data
     private var currentQuestionIndex: Int = 0 // Variable to keep track of the current question index
     private var score: Int = 0 // Variable to keep track of the user's score

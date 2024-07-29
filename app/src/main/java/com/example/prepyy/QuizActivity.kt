@@ -1,5 +1,8 @@
 package com.example.prepyy
 
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -69,7 +72,20 @@ class QuizActivity : AppCompatActivity() {
     private fun updateProgress() {
         val currentQuestion = currentQuestionIndex + 1
         progressTextView.text = "Question $currentQuestion/$totalQuestions"
-        progressBar.progress = currentQuestion
+
+        // Animate the progress bar
+        ObjectAnimator.ofInt(progressBar, "progress", progressBar.progress, currentQuestion)
+            .setDuration(300) // Duration of the animation in milliseconds
+            .start()
+
+        // Animate the progress text
+        val animator = ValueAnimator.ofInt(progressBar.progress, currentQuestion)
+        animator.duration = 300 // Duration of the animation in milliseconds
+        animator.addUpdateListener { animation ->
+            val animatedValue = animation.animatedValue as Int
+            progressTextView.text = "Question $animatedValue/$totalQuestions"
+        }
+        animator.start()
     }
 
     private fun showNextQuestion() {

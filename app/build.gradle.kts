@@ -95,6 +95,9 @@ dependencies {
     implementation ("com.google.firebase:firebase-auth:22.0.0")
     implementation ("com.google.firebase:firebase-core:21.1.0")
     implementation ("com.google.firebase:firebase-auth:21.0.1")
+    implementation ("androidx.credentials:credentials:<latest version>")
+    implementation ("androidx.credentials:credentials-play-services-auth:<latest version>")
+    implementation ("com.google.android.libraries.identity.googleid:googleid:<latest version>")
 
 
 }

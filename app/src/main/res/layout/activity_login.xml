@@ -88,17 +88,16 @@
         app:layout_constraintEnd_toEndOf="@id/etPassword"
         android:layout_marginTop="24dp"/>
 
-    <TextView
-        android:id="@+id/tvSocialSignIn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:text="Or sign in using Social Media"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.497"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btnSignIn"
-        android:textColor="@android:color/black"/>
+   <ImageView
+       android:id="@+id/google_btn"
+       android:layout_width="48dp"
+       android:layout_height="48dp"
+       android:layout_margin="20dp"
+       android:src="@drawable/googlelogo"
+       app:layout_constraintTop_toBottomOf="@id/btnSignIn"
+       app:layout_constraintStart_toStartOf="parent"
+       app:layout_constraintEnd_toEndOf="parent"
+       />
 
     <TextView
         android:id="@+id/tvSignUp"

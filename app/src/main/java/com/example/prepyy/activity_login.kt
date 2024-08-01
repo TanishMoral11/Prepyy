@@ -35,7 +35,7 @@ class LoginActivity : AppCompatActivity() {
         etPassword = findViewById(R.id.etPassword)
         tvForgotPassword = findViewById(R.id.tvForgotPassword)
         btnSignIn = findViewById(R.id.btnSignIn)
-        tvSocialSignIn = findViewById(R.id.tvSocialSignIn)
+//        tvSocialSignIn = findViewById(R.id.tvSocialSignIn)
         tvSignUp = findViewById(R.id.tvSignUp)
 
         btnSignIn.setOnClickListener {

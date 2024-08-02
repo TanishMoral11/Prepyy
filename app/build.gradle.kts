@@ -39,7 +39,8 @@ android {
     }
 
     buildFeatures {
-        compose = true
+        dataBinding = true
+
     }
 
     composeOptions {
@@ -99,6 +100,10 @@ dependencies {
     // Also add the dependency for the Google Play services library and specify its version
     implementation("com.google.android.gms:play-services-auth:21.2.0")
 
+    implementation ("androidx.compose.ui:ui:1.0.5")
+    implementation ("androidx.compose.material:material:1.0.5")
+    implementation ("androidx.navigation:navigation-compose:2.4.0-rc01")
+    implementation ("androidx.compose.runtime:runtime-livedata:1.0.5")
 
 
 

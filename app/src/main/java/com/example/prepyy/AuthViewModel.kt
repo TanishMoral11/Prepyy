@@ -13,6 +13,10 @@ class AuthViewModel : ViewModel() {
     private val _authState = MutableLiveData<AuthState>()
     val authState: LiveData<AuthState> = _authState
 
+    init {
+        checkAuthStatus()
+    }
+
     fun checkAuthStatus() {
         _authState.value = if (auth.currentUser == null) {
             AuthState.Unauthenticated
@@ -58,16 +62,15 @@ class AuthViewModel : ViewModel() {
         _authState.value = AuthState.Unauthenticated
     }
 
-    fun firebaseAuthWithGoogle(account : GoogleSignInAccount){
+    fun firebaseAuthWithGoogle(account: GoogleSignInAccount) {
         _authState.value = AuthState.Loading
         val credential = GoogleAuthProvider.getCredential(account.idToken, null)
         auth.signInWithCredential(credential)
             .addOnCompleteListener { task ->
-                _authState.value = if(task.isSuccessful){
+                _authState.value = if (task.isSuccessful) {
                     AuthState.Authenticated
-                }else
-                {
-                    AuthState.Error(task.exception?.message?: "Google Sign IN Failed")
+                } else {
+                    AuthState.Error(task.exception?.message ?: "Google Sign In Failed")
                 }
             }
     }

@@ -27,6 +27,9 @@ import com.airbnb.lottie.LottieAnimationView
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.Content
 import com.google.ai.client.generativeai.type.content
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.firebase.auth.FirebaseAuth
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfReader
 import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor
@@ -45,6 +48,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var uploadAnimation: LottieAnimationView
     private lateinit var sharedPreferences: SharedPreferences  // Initialize SharedPreferences
     private lateinit var profileIcon: View
+    private lateinit var auth: FirebaseAuth
 
 
 
@@ -66,7 +70,15 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        auth=FirebaseAuth.getInstance()
+        if(auth.currentUser==null)
+        {
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+        }
+
         sharedPreferences = getSharedPreferences("prepyy_prefs", Context.MODE_PRIVATE)
+
 
 
         uploadButton = findViewById(R.id.uploadButton)
@@ -103,12 +115,9 @@ class MainActivity : AppCompatActivity() {
         popupMenu.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
                 0 -> {
+                    signOut()
 
-                    setLoggedIn(false)
-                    Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show()
-                    startActivity(Intent(this, LoginActivity::class.java))
-                    finish()
-                    true
+                true
                 }
                 else -> false
             }
@@ -330,5 +339,18 @@ class MainActivity : AppCompatActivity() {
             putExtra("EXPLANATION", explanationTextView.text.toString())
         }
         startActivity(intent)
+    }
+    fun signOut() {
+        auth.signOut()
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(getString(R.string.default_web_client_id))
+            .requestEmail()
+            .build()
+        val googleSignInClient = GoogleSignIn.getClient(this, gso)
+        googleSignInClient.signOut()
+        Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show()
+        startActivity(Intent(this, LoginActivity::class.java))
+        finish()
+
     }
 }

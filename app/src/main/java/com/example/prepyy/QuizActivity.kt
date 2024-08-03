@@ -3,13 +3,16 @@ package com.example.prepyy
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.content.res.ColorStateList
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Button
+import android.widget.MediaController
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import android.widget.VideoView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import org.json.JSONArray
@@ -26,6 +29,13 @@ class QuizActivity : AppCompatActivity() {
     private var quizData: JSONArray = JSONArray()
     private var currentQuestionIndex: Int = -1 // Start at -1 so first question is 0
     private var score: Int = 0
+
+
+    companion object {
+        private const val SCORE_LOW = 0
+        private const val SCORE_MEDIUM = 2
+        private const val SCORE_HIGH = 5
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -132,7 +142,11 @@ class QuizActivity : AppCompatActivity() {
         } else {
             optionButtons[selectedIndex].backgroundTintList = incorrectColor
             optionButtons[correctAnswer].backgroundTintList = correctColor
-            Toast.makeText(this, "Incorrect. The correct answer was ${optionButtons[correctAnswer].text}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                this,
+                "Incorrect. The correct answer was ${optionButtons[correctAnswer].text}",
+                Toast.LENGTH_SHORT
+            ).show()
         }
 
         optionButtons.forEach { it.isEnabled = false }
@@ -155,5 +169,36 @@ class QuizActivity : AppCompatActivity() {
 
         val resultText = "Your score: $score out of $totalQuestions"
         Toast.makeText(this, resultText, Toast.LENGTH_LONG).show()
+
+        //Determine which video will be played based on the score
+        val videoResource = when {
+            score <= SCORE_LOW -> R.raw.padai
+            score in (SCORE_MEDIUM..SCORE_HIGH - 1) -> R.raw.itnagalat
+            else -> R.raw.adbhut
+        }
+
+        //Play the video
+        playVideo(videoResource)
+    }
+
+    private fun playVideo(videoResource: Int) {
+        val videoView: VideoView = findViewById(R.id.videoView)
+
+
+        videoView.visibility = View.VISIBLE
+
+
+        val videoPath = "android.resource://$packageName/$videoResource"
+        videoView.setVideoURI(Uri.parse(videoPath))
+        videoView.setMediaController(MediaController(this))
+        videoView.requestFocus()
+
+        videoView.setOnCompletionListener { mp ->
+            mp.start() // Restart the video
+        }
+
+        videoView.start()
+
+
     }
 }

@@ -115,6 +115,23 @@
         android:textColor="@color/black"
         android:backgroundTint="@color/primary_very_light"
         />
+
+    <TextView
+        android:id="@+id/tvresult"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:padding="16dp"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:gravity="center"
+        app:layout_constraintTop_toBottomOf="@id/optionDButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/videoView"
+        tools:text="Result Text"
+        android:visibility="gone"/>
     <VideoView
         android:id="@+id/videoView"
         android:layout_width="match_parent"
@@ -124,6 +141,8 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
+
 
 
     <com.google.android.material.button.MaterialButton

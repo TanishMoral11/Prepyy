@@ -162,16 +162,16 @@ class QuizActivity : AppCompatActivity() {
         if (selectedIndex == correctAnswer) {
             score++ // Increase the score for a correct answer
             optionButtons[selectedIndex].backgroundTintList = correctColor
-            Toast.makeText(this, "Correct!", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(this, "Correct!", Toast.LENGTH_SHORT).show()
         } else {
             // If incorrect, highlight the correct answer and show a message
             optionButtons[selectedIndex].backgroundTintList = incorrectColor
             optionButtons[correctAnswer].backgroundTintList = correctColor
-            Toast.makeText(
-                this,
-                "Incorrect. The correct answer was ${optionButtons[correctAnswer].text}",
-                Toast.LENGTH_SHORT
-            ).show()
+//            Toast.makeText(
+//                this,
+//                "Incorrect. The correct answer was ${optionButtons[correctAnswer].text}",
+//                Toast.LENGTH_SHORT
+//            ).show()
         }
 
         // Disable all buttons after answering and show the "Next" button
@@ -190,6 +190,7 @@ class QuizActivity : AppCompatActivity() {
     // Function to show the quiz result after all questions are answered
     private fun showQuizResult() {
         questionTextView.text = "Quiz complete!" // Display a completion message
+        val resultView= findViewById<TextView>(R.id.tvresult)
         optionButtons.forEach { it.visibility = View.GONE } // Hide the option buttons
         nextButton.visibility = View.GONE // Hide the "Next" button
         progressBar.visibility = View.GONE // Hide the progress bar
@@ -197,13 +198,21 @@ class QuizActivity : AppCompatActivity() {
 
         // Display the user's score
         val resultText = "Your score: $score out of $totalQuestions"
-        Toast.makeText(this, resultText, Toast.LENGTH_LONG).show()
+
+
+//        Toast.makeText(this, resultText, Toast.LENGTH_LONG).show()
+        resultView.visibility = View.VISIBLE
+
+        resultView.text = resultText
+        //show result
+
+
 
         // Determine which video to play based on the score
         val videoResource = when {
             score <= SCORE_LOW -> R.raw.padai // Low score
-            score in (SCORE_MEDIUM..SCORE_HIGH - 1) -> R.raw.itnagalat // Medium score
-            else -> R.raw.adbhut // High score
+            score == SCORE_HIGH -> R.raw.adbhut // High score
+            else -> R.raw.itnagalat // Medium score
         }
 
         // Play the appropriate video
